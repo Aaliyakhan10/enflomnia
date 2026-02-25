@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #6366f1;
+  --brand-dark: #4338ca;
+  --surface: #0f0f1a;
+  --surface-2: #161624;
+  --surface-3: #1e1e32;
+  --border: rgba(255,255,255,0.08);
+  --text: #f1f1f5;
+  --text-muted: #8888aa;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--surface-2); }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 3px; }
+
+/* Cards */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+/* Status badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-spam    { background: rgba(239,68,68,0.15); color: #f87171; }
+.badge-toxic   { background: rgba(249,115,22,0.15); color: #fb923c; }
+.badge-bot     { background: rgba(168,85,247,0.15); color: #c084fc; }
+.badge-safe    { background: rgba(34,197,94,0.15); color: #4ade80; }
+.badge-high-value { background: rgba(99,102,241,0.15); color: #818cf8; }
