@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
-import { FileText, Copy, Check, Loader, ChevronRight } from "lucide-react";
-import { scriptsApi } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { FileText, Copy, Check, Loader, ChevronRight, Play } from "lucide-react";
+import { scriptsApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
 const TONES = ["entertaining", "educational", "inspiring"];
@@ -22,21 +22,27 @@ function CopyButton({ text }: { text: string }) {
 
 export default function ScriptsPage() {
     const [form, setForm] = useState({
-        topic: "", brand_name: "", brand_brief: "", tone: "entertaining",
+        topic: "", brand_name: "", brand_brief: "", tone: "entertaining", reel_id: "",
     });
+    const [reels, setReels] = useState<any[]>([]);
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        instagramApi.getReels(CREATOR_ID).then(res => setReels(res.data)).catch(() => { });
+    }, []);
 
     function update(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
 
     async function handleGenerate(e: React.FormEvent) {
         e.preventDefault();
-        if (!form.topic) return;
+        if (!form.topic && !form.reel_id) return;
         setLoading(true);
         try {
             const res = await scriptsApi.generate({
                 creator_id: CREATOR_ID,
-                topic: form.topic,
+                topic: form.topic || undefined,
+                reel_id: form.reel_id || undefined,
                 brand_name: form.brand_name || undefined,
                 brand_brief: form.brand_brief || undefined,
                 tone: form.tone,
@@ -61,11 +67,24 @@ export default function ScriptsPage() {
                     <h2 className="font-semibold text-white text-sm uppercase tracking-wider">Content Brief</h2>
 
                     <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Topic *</label>
-                        <input type="text" placeholder="e.g. morning skincare routine" value={form.topic}
-                            onChange={e => update("topic", e.target.value)} required
-                            className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-yellow-500" />
+                        <label className="text-xs text-yellow-400 mb-1 block font-bold flex items-center gap-1">
+                            <Play size={12} /> Select a Reel (Auto-Topics)
+                        </label>
+                        <select value={form.reel_id} onChange={e => { update("reel_id", e.target.value); update("topic", ""); }}
+                            className="w-full px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-white text-sm focus:outline-none focus:border-yellow-500">
+                            <option value="">No reel (Manual Topic)</option>
+                            {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 50) || "Video"}...</option>)}
+                        </select>
                     </div>
+
+                    {!form.reel_id && (
+                        <div>
+                            <label className="text-xs text-gray-500 mb-1 block">Manual Topic *</label>
+                            <input type="text" placeholder="e.g. morning skincare routine" value={form.topic}
+                                onChange={e => update("topic", e.target.value)} required={!form.reel_id}
+                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-yellow-500" />
+                        </div>
+                    )}
 
                     <div>
                         <label className="text-xs text-gray-500 mb-1 block">Brand Name (optional)</label>
@@ -94,7 +113,7 @@ export default function ScriptsPage() {
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading || !form.topic}
+                    <button type="submit" disabled={loading || (!form.topic && !form.reel_id)}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-yellow-500 text-black text-sm font-bold hover:bg-yellow-400 transition-all disabled:opacity-50">
                         {loading ? <Loader size={14} className="animate-spin" /> : <FileText size={14} />}
                         {loading ? "Generating…" : "Generate Script"}

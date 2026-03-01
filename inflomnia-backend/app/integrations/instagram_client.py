@@ -8,7 +8,7 @@ connected Instagram Business/Creator account.
 import httpx
 from typing import Optional
 
-GRAPH_BASE = "https://graph.instagram.com"
+GRAPH_BASE = "https://graph.facebook.com"
 GRAPH_V = "v21.0"
 
 
@@ -22,22 +22,39 @@ class InstagramClient:
 
     def get_me(self) -> dict:
         """Return basic account info to verify the token is valid."""
+        # The token provided is a Facebook User token. We need to find the connected Instagram Business account.
         r = self._client.get(
-            f"https://graph.instagram.com/me",
+            f"{GRAPH_BASE}/{GRAPH_V}/me/accounts",
             params={
-                "fields": "id,name,username,profile_picture_url,followers_count,media_count,account_type",
+                "fields": "instagram_business_account{id,username,name,profile_picture_url,followers_count,media_count}",
                 "access_token": self.token,
             },
         )
         r.raise_for_status()
-        return r.json()
+        
+        data = r.json().get("data", [])
+        for page in data:
+            if "instagram_business_account" in page:
+                ig_info = page["instagram_business_account"]
+                # Map fields to match what DB adapter expects
+                return {
+                    "id": ig_info.get("id"),
+                    "username": ig_info.get("username"),
+                    "name": ig_info.get("name"),
+                    "profile_picture_url": ig_info.get("profile_picture_url"),
+                    "followers_count": ig_info.get("followers_count"),
+                    "media_count": ig_info.get("media_count"),
+                    "account_type": "BUSINESS"
+                }
+
+        raise Exception("No Instagram Professional/Creator account found linked to your Facebook pages. Please make sure your Instagram account is linked to a Facebook Page you manage.")
 
     # ── Media list ───────────────────────────────────────────────────────────
 
     def get_reels(self, ig_user_id: str, limit: int = 25) -> list[dict]:
         """Fetch recent media, return only REELS with basic metrics."""
         r = self._client.get(
-            f"https://graph.instagram.com/{ig_user_id}/media",
+            f"{GRAPH_BASE}/{GRAPH_V}/{ig_user_id}/media",
             params={
                 "fields": (
                     "id,caption,media_type,timestamp,permalink,"
@@ -50,7 +67,7 @@ class InstagramClient:
         )
         r.raise_for_status()
         data = r.json().get("data", [])
-        return [m for m in data if m.get("media_type") == "REELS"]
+        return [m for m in data if m.get("media_type") == "REELS" or m.get("media_type") == "VIDEO"]
 
     # ── Reel insights ────────────────────────────────────────────────────────
 
@@ -67,7 +84,7 @@ class InstagramClient:
         ]
         try:
             r = self._client.get(
-                f"https://graph.instagram.com/{media_id}/insights",
+                f"{GRAPH_BASE}/{GRAPH_V}/{media_id}/insights",
                 params={
                     "metric": ",".join(metrics),
                     "access_token": self.token,
@@ -79,6 +96,19 @@ class InstagramClient:
         except Exception:
             # Insights may not always be available (e.g. personal accounts)
             return {}
+
+    def get_media_comments(self, media_id: str, limit: int = 50) -> list[dict]:
+        """Fetch real comments for a given media object (Reel/Post)."""
+        r = self._client.get(
+            f"{GRAPH_BASE}/{GRAPH_V}/{media_id}/comments",
+            params={
+                "fields": "id,text,timestamp,username",
+                "limit": limit,
+                "access_token": self.token,
+            },
+        )
+        r.raise_for_status()
+        return r.json().get("data", [])
 
     def close(self):
         self._client.close()

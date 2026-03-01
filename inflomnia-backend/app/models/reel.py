@@ -34,4 +34,10 @@ class Reel(Base):
     best_practices = Column(Text, nullable=True)       # JSON list
     improvement_tips = Column(Text, nullable=True)     # JSON list
 
+    # Reach Anomaly
+    # none | creator_specific | platform_wide
+    anomaly_type = Column(String, nullable=True)
+    anomaly_confidence = Column(Float, nullable=True)
+    anomaly_reasoning = Column(String, nullable=True)
+
     fetched_at = Column(DateTime(timezone=True), server_default=func.now())

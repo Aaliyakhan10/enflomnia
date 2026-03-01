@@ -72,24 +72,29 @@ class ScriptService:
         if brand_brief:
             brand_section += f"\nBrand brief: {brand_brief}"
 
-        prompt = f"""Create a branded content script for a social media creator.
+        prompt = f"""Create a high-converting branded content script for a social media creator. The script must be optimized for modern short-form attention spans.
 
 Topic: {topic}{brand_section}
 Tone: {tone}
 
+Rules:
+1. The Hook MUST be under 3 seconds (max 12 words) and instantly create a curiosity gap or relatable pain point.
+2. At least one visual pattern interrupt should be suggested in the tips.
+3. The brand integration must feel organic, never like a traditional commercial.
+
 Return a JSON object with exactly these keys:
 {{
-  "hook": "one attention-grabbing opening sentence (max 15 words)",
+  "hook": "one attention-grabbing opening sentence (max 12 words)",
   "structure": [
-    {{"section": "Hook", "content": "...", "duration_seconds": 5, "tips": "..."}},
-    {{"section": "Problem / Relatable Moment", "content": "...", "duration_seconds": 10, "tips": "..."}},
-    {{"section": "Solution / Brand Integration", "content": "...", "duration_seconds": 20, "tips": "..."}},
-    {{"section": "Demo / Proof", "content": "...", "duration_seconds": 15, "tips": "..."}},
-    {{"section": "CTA", "content": "...", "duration_seconds": 10, "tips": "..."}}
+    {{"section": "Hook", "content": "...", "duration_seconds": 3, "tips": "Visual/Audio hook tip"}},
+    {{"section": "Problem / Relatable Moment", "content": "...", "duration_seconds": 8, "tips": "Pacing tip"}},
+    {{"section": "Organic Brand Integration", "content": "...", "duration_seconds": 15, "tips": "How to make the brand feel native"}},
+    {{"section": "Demo / Value Add", "content": "...", "duration_seconds": 15, "tips": "Show, don't tell tip"}},
+    {{"section": "CTA", "content": "...", "duration_seconds": 5, "tips": "Engagement driver tip"}}
   ],
-  "cta": "the call-to-action line",
+  "cta": "a clear call-to-action line that drives comments or saves, not just followers",
   "tips": ["tip 1", "tip 2", "tip 3"],
-  "reasoning": "one sentence on why this structure works for this topic and tone"
+  "reasoning": "one sentence on why this specific psychological structure will retain viewers for this topic"
 }}
 
 Return ONLY valid JSON, no markdown."""

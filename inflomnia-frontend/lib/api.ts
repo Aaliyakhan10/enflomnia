@@ -5,6 +5,27 @@ const api = axios.create({
     headers: { "Content-Type": "application/json" },
 });
 
+// ── Instagram ─────────────────────────────────────────────────────────────
+export const instagramApi = {
+    getReels: (creatorId: string) =>
+        api.get(`/api/v1/instagram/reels/${creatorId}`),
+};
+
+// ── Intelligence (Phase 2) ────────────────────────────────────────────────
+export const intelligenceApi = {
+    getSuggestions: (creatorId: string) =>
+        api.get(`/api/v1/intelligence/content-suggestions/${creatorId}`),
+
+    getFeedback: (creatorId: string, reelId: string) =>
+        api.get(`/api/v1/intelligence/reel-feedback/${creatorId}/${reelId}`),
+
+    getCompetitorsAndTrends: (creatorId: string, niche = "lifestyle") =>
+        api.get(`/api/v1/intelligence/competitors-trends/${creatorId}?niche=${niche}`),
+
+    simulateGrowth: (creatorId: string) =>
+        api.get(`/api/v1/intelligence/growth-simulation/${creatorId}`),
+};
+
 // ── Reach ─────────────────────────────────────────────────────────────────
 export const reachApi = {
     ingestSnapshot: (data: { creator_id: string; reach: number; impressions: number }) =>
@@ -47,8 +68,9 @@ export const workloadApi = {
 // ── Accelerator: Pricing ───────────────────────────────────────────────────
 export const pricingApi = {
     estimate: (data: {
-        creator_id: string; platform: string; deliverable_type: string;
-        follower_count: number; engagement_rate: number; niche: string;
+        creator_id: string; platform?: string; deliverable_type: string;
+        reel_id?: string;
+        follower_count?: number; engagement_rate?: number; niche?: string;
         brand_name?: string; offered_price?: number;
     }) => api.post("/api/v1/pricing/estimate", data),
 
@@ -59,7 +81,7 @@ export const pricingApi = {
 // ── Accelerator: Scripts ───────────────────────────────────────────────────
 export const scriptsApi = {
     generate: (data: {
-        creator_id: string; topic: string;
+        creator_id: string; topic?: string; reel_id?: string;
         brand_name?: string; brand_brief?: string; tone: string;
     }) => api.post("/api/v1/scripts/generate", data),
 
@@ -77,8 +99,8 @@ export const matchingApi = {
     getBrands: () => api.get("/api/v1/matching/brands"),
 
     findMatches: (data: {
-        creator_id: string; niche: string; platform: string;
-        follower_count: number; engagement_rate: number; audience_description?: string;
+        creator_id: string; niche?: string; platform?: string; reel_id?: string;
+        follower_count?: number; engagement_rate?: number; audience_description?: string;
     }) => api.post("/api/v1/matching/find-brands", data),
 
     getMatches: (creatorId: string) =>

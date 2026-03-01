@@ -62,6 +62,7 @@ class MatchingService:
         audience_description: Optional[str] = None,
     ) -> List[dict]:
         """Score all brands against creator profile and return top matches with Claude reasoning."""
+        self._seed_mock_brands_if_empty(db)
         brands = db.query(Brand).all()
         if not brands:
             return []
@@ -148,6 +149,26 @@ class MatchingService:
                 "created_at": m.created_at or datetime.utcnow(),
             })
         return results
+
+    # ── Mock Seeding ────────────────────────────────────────────────────────
+
+    def _seed_mock_brands_if_empty(self, db: Session):
+        count = db.query(Brand).count()
+        if count > 0:
+            return
+            
+        mock_brands = [
+            {"name": "Lumina Skincare", "industry": "beauty", "target_audience": "18-35 women interested in clean beauty", "content_niches": "beauty,lifestyle", "budget_range_min": 500, "budget_range_max": 2500},
+            {"name": "Aero Athletics", "industry": "fitness", "target_audience": "fitness enthusiasts and athletes", "content_niches": "fitness,sports,health", "budget_range_min": 1000, "budget_range_max": 5000},
+            {"name": "ByteGear", "industry": "tech", "target_audience": "gamers and pc builders", "content_niches": "gaming,tech", "budget_range_min": 1500, "budget_range_max": 8000},
+            {"name": "Nomad Coffees", "industry": "food", "target_audience": "coffee lovers and travelers", "content_niches": "food,travel,lifestyle", "budget_range_min": 300, "budget_range_max": 1500},
+            {"name": "FinFlex App", "industry": "finance", "target_audience": "20-40 young professionals", "content_niches": "finance,education", "budget_range_min": 2000, "budget_range_max": 10000},
+        ]
+        
+        for mb in mock_brands:
+            brand = Brand(id=str(uuid.uuid4()), **mb)
+            db.add(brand)
+        db.commit()
 
     # ── Scoring helpers ─────────────────────────────────────────────────────
 

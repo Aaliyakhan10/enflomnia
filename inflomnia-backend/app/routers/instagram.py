@@ -26,6 +26,14 @@ def get_account(creator_id: str, db: Session = Depends(get_db)):
     return account
 
 
+@router.post("/disconnect/{creator_id}", summary="Disconnect Instagram account")
+def disconnect_account(creator_id: str, db: Session = Depends(get_db)):
+    try:
+        return _svc.disconnect_account(db, creator_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/sync/{creator_id}", summary="Sync latest reels from Instagram")
 def sync_reels(creator_id: str, limit: int = 20, db: Session = Depends(get_db)):
     try:

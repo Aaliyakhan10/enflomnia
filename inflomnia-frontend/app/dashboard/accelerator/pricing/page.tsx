@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
-import { DollarSign, TrendingUp, TrendingDown, Minus, Loader, ChevronDown } from "lucide-react";
-import { pricingApi } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { DollarSign, TrendingUp, TrendingDown, Minus, Loader, ChevronDown, Play } from "lucide-react";
+import { pricingApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
 
@@ -18,12 +18,17 @@ const VERDICT_CONFIG = {
 
 export default function PricingPage() {
     const [form, setForm] = useState({
-        platform: "instagram", deliverable_type: "reel",
-        follower_count: "50000", engagement_rate: "4.5",
+        platform: "instagram", deliverable_type: "reel", reel_id: "",
+        follower_count: "", engagement_rate: "",
         niche: "fitness", brand_name: "", offered_price: "",
     });
+    const [reels, setReels] = useState<any[]>([]);
     const [result, setResult] = useState<any>(null);
     const [history, setHistory] = useState<any[]>([]);
+
+    useEffect(() => {
+        instagramApi.getReels(CREATOR_ID).then(res => setReels(res.data)).catch(() => { });
+    }, []);
     const [loading, setLoading] = useState(false);
     const [tab, setTab] = useState<"estimate" | "history">("estimate");
 
@@ -37,8 +42,9 @@ export default function PricingPage() {
                 creator_id: CREATOR_ID,
                 platform: form.platform,
                 deliverable_type: form.deliverable_type,
-                follower_count: parseInt(form.follower_count),
-                engagement_rate: parseFloat(form.engagement_rate) / 100,
+                reel_id: form.reel_id || undefined,
+                follower_count: form.follower_count ? parseInt(form.follower_count) : undefined,
+                engagement_rate: form.engagement_rate ? parseFloat(form.engagement_rate) / 100 : undefined,
                 niche: form.niche,
                 brand_name: form.brand_name || undefined,
                 offered_price: form.offered_price ? parseFloat(form.offered_price) : undefined,
@@ -101,16 +107,32 @@ export default function PricingPage() {
                         </div>
 
                         <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Followers</label>
-                            <input type="number" value={form.follower_count} onChange={e => update("follower_count", e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                            <label className="text-xs text-green-400 mb-1 block font-bold flex items-center gap-1">
+                                <Play size={12} /> Select a Reel (Auto-Engagement)
+                            </label>
+                            <select value={form.reel_id} onChange={e => { update("reel_id", e.target.value); update("engagement_rate", ""); update("follower_count", ""); }}
+                                className="w-full px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-white text-sm focus:outline-none focus:border-green-500">
+                                <option value="">No reel (Use Profile Average)</option>
+                                {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 50) || "Video"}...</option>)}
+                            </select>
+                            <p className="text-[10px] text-gray-500 mt-1">If selected, custom rate is calculated directly from this reel's metrics.</p>
                         </div>
 
-                        <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Engagement Rate (%)</label>
-                            <input type="number" step="0.1" value={form.engagement_rate} onChange={e => update("engagement_rate", e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
-                        </div>
+                        {!form.reel_id && (
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="text-xs text-gray-500 mb-1 block">Followers Override</label>
+                                    <input type="number" placeholder="Auto" value={form.follower_count} onChange={e => update("follower_count", e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs text-gray-500 mb-1 block">Engagement % Override</label>
+                                    <input type="number" step="0.1" placeholder="Auto" value={form.engagement_rate} onChange={e => update("engagement_rate", e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                                </div>
+                            </div>
+                        )}
 
                         <div>
                             <label className="text-xs text-gray-500 mb-1 block">Niche</label>

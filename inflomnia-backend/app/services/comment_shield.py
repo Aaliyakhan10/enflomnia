@@ -55,6 +55,7 @@ class CommentShieldService:
         for item in results:
             comment = Comment(
                 creator_id=creator_id,
+                ig_media_id=item.get("ig_media_id"),
                 platform=item.get("platform", "instagram"),
                 content=item["content"],
                 author=item.get("author", "unknown"),
@@ -72,6 +73,7 @@ class CommentShieldService:
                 "category": comment.category,
                 "confidence": comment.confidence,
                 "engagement_score": comment.engagement_score,
+                "ig_media_id": comment.ig_media_id,
                 "creator_feedback": None,
             })
 

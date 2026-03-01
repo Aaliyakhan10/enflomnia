@@ -5,11 +5,12 @@ from datetime import datetime
 
 class PricingRequestIn(BaseModel):
     creator_id: str
-    platform: str                    # instagram | youtube | tiktok
+    reel_id: Optional[str] = None
+    platform: Optional[str] = "instagram"
     deliverable_type: str            # post | reel | video | story
-    follower_count: int
-    engagement_rate: float           # e.g. 0.045 = 4.5%
-    niche: str                       # fashion | tech | food | fitness | gaming | travel | general
+    follower_count: Optional[int] = None
+    engagement_rate: Optional[float] = None
+    niche: Optional[str] = "general"
     brand_name: Optional[str] = None
     brand_industry: Optional[str] = None
     offered_price: Optional[float] = None  # brand's offer to evaluate

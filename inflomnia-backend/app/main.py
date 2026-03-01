@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import reach, comments, workload, pricing, scripts, matching, instagram
+from app.routers import reach, comments, workload, pricing, scripts, matching, instagram, intelligence
 
 # Import all models so Alembic/SQLAlchemy can discover them
 import app.models  # noqa: F401
@@ -40,6 +40,8 @@ app.include_router(scripts.router)
 app.include_router(matching.router)
 # Instagram
 app.include_router(instagram.router)
+# Content Intelligence (Phase 2)
+app.include_router(intelligence.router)
 
 
 @app.get("/health", tags=["Health"])

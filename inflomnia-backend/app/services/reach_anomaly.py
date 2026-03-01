@@ -9,10 +9,12 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.reach_snapshot import ReachSnapshot
+from app.models.reel import Reel
 from app.models.creator import Creator
 from app.integrations.bedrock_client import BedrockClient
 from app.integrations.opensearch_client import OpenSearchClient
 from app.integrations.s3_client import S3Client
+from app.services.mock_data_service import seed_mock_instagram_data
 
 
 class ReachAnomalyService:
@@ -63,19 +65,20 @@ class ReachAnomalyService:
         checks if platform-wide by querying similar creators, then
         calls Claude for a human-readable reasoning string.
         """
-        snapshots = (
-            db.query(ReachSnapshot)
-            .filter(ReachSnapshot.creator_id == creator_id)
-            .order_by(ReachSnapshot.recorded_at.desc())
+        seed_mock_instagram_data(db, creator_id)
+        reels = (
+            db.query(Reel)
+            .filter(Reel.creator_id == creator_id)
+            .order_by(Reel.published_at.desc())
             .limit(30)
             .all()
         )
 
-        if len(snapshots) < 2:
+        if len(reels) < 2:
             return {"anomaly_type": "none", "confidence": 0.0, "reasoning": "Not enough data yet."}
 
-        latest = snapshots[0].reach
-        baseline = self._rolling_baseline(snapshots[1:8])  # 7-day avg (excluding latest)
+        latest = reels[0].reach or 0
+        baseline = self._rolling_baseline(reels[1:8])  # 7-day avg (excluding latest)
 
         if baseline == 0:
             return {"anomaly_type": "none", "confidence": 0.0, "reasoning": "Baseline unavailable."}
@@ -106,10 +109,10 @@ class ReachAnomalyService:
             similar_affected=len([c for c in similar_creators if c]),
         )
 
-        # Persist anomaly result on the latest snapshot
-        snapshots[0].anomaly_type = anomaly_type
-        snapshots[0].anomaly_confidence = confidence
-        snapshots[0].anomaly_reasoning = reasoning
+        # Persist anomaly result on the latest reel
+        reels[0].anomaly_type = anomaly_type
+        reels[0].anomaly_confidence = confidence
+        reels[0].anomaly_reasoning = reasoning
         db.commit()
 
         return {
@@ -125,10 +128,10 @@ class ReachAnomalyService:
     #  Helpers                                                             #
     # ------------------------------------------------------------------ #
 
-    def _rolling_baseline(self, snapshots: list[ReachSnapshot]) -> float:
-        if not snapshots:
+    def _rolling_baseline(self, items: list) -> float:
+        if not items:
             return 0.0
-        return sum(s.reach for s in snapshots) / len(snapshots)
+        return sum((i.reach or 0) for i in items) / len(items)
 
     def _get_recent_similar_creators(self, db: Session, creator_id: str) -> list[str]:
         """Get creator IDs from the same niche+follower bracket via DB (fallback if no OpenSearch)."""
@@ -160,16 +163,16 @@ class ReachAnomalyService:
         affected = 0
 
         for cid in similar_creator_ids:
-            snaps = (
-                db.query(ReachSnapshot)
-                .filter(ReachSnapshot.creator_id == cid, ReachSnapshot.recorded_at >= cutoff)
-                .order_by(ReachSnapshot.recorded_at.desc())
+            reels = (
+                db.query(Reel)
+                .filter(Reel.creator_id == cid, Reel.published_at >= cutoff)
+                .order_by(Reel.published_at.desc())
                 .limit(5)
                 .all()
             )
-            if len(snaps) >= 2:
-                recent = snaps[0].reach
-                prev_avg = self._rolling_baseline(snaps[1:])
+            if len(reels) >= 2:
+                recent = reels[0].reach or 0
+                prev_avg = self._rolling_baseline(reels[1:])
                 if prev_avg > 0 and (prev_avg - recent) / prev_avg >= self.DROP_THRESHOLD:
                     affected += 1
 

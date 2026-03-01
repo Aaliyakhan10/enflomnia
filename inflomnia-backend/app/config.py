@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     cognito_user_pool_id: str = ""
     cognito_client_id: str = ""
 
+    # Integrations
+    instagram_access_token: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False

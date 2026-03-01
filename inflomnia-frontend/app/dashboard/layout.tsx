@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, TrendingDown, Zap, LayoutDashboard, DollarSign, FileText, Users, Rocket, Instagram } from "lucide-react";
+import { Shield, TrendingDown, Zap, LayoutDashboard, DollarSign, FileText, Users, Rocket, Instagram, Lightbulb } from "lucide-react";
 
 const shieldNav = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -12,16 +12,19 @@ const shieldNav = [
 ];
 
 const acceleratorNav = [
-    { href: "/dashboard/accelerator", label: "Overview", icon: Rocket },
     { href: "/dashboard/accelerator/pricing", label: "Brand Deal Pricing", icon: DollarSign },
-    { href: "/dashboard/accelerator/scripts", label: "Script Generator", icon: FileText },
     { href: "/dashboard/accelerator/matching", label: "Brand Matching", icon: Users },
+    { href: "/dashboard/accelerator/scripts", label: "Script Generator", icon: FileText },
+];
+
+const intelligenceNav = [
+    { href: "/dashboard/intelligence", label: "Insights & Strategy", icon: Lightbulb },
 ];
 
 function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {
     const active = pathname === href;
     return (
-        <Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active ? "bg-indigo-500/20 text-indigo-300" : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+        <Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active ? "bg-fuchsia-500/20 text-fuchsia-300" : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
             }`}>
             <Icon size={15} />
             {label}
@@ -40,12 +43,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 {/* Logo */}
                 <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
-                        <Shield size={15} className="text-white" />
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
+                        <Shield size={16} className="text-white" />
                     </div>
                     <div>
                         <span className="font-bold text-sm text-white tracking-wide">Inflomnia</span>
-                        <p className="text-[10px] text-indigo-400 font-medium">Phase 1</p>
+                        <p className="text-[10px] text-fuchsia-400 font-medium">Creator Hub</p>
                     </div>
                 </div>
 
@@ -64,7 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                     {/* The Accelerator */}
                     <div>
-                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1">
+                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1 mt-4">
                             🚀 The Accelerator
                         </p>
                         <div className="space-y-0.5">
@@ -73,14 +76,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             ))}
                         </div>
                     </div>
+
+                    {/* Content Intelligence */}
+                    <div>
+                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1 mt-4">
+                            🧠 Content Intelligence
+                        </p>
+                        <div className="space-y-0.5">
+                            {intelligenceNav.map(item => (
+                                <NavLink key={item.href} {...item} pathname={pathname} />
+                            ))}
+                        </div>
+                    </div>
                 </nav>
 
                 {/* Footer */}
                 <div className="p-3 border-t border-white/[0.06]">
-                    <div className="rounded-lg p-3 text-[11px] text-gray-500"
+                    <div className="rounded-lg p-3 flex items-center gap-3"
                         style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}>
-                        <p className="font-semibold text-gray-400 mb-0.5">📡 Status</p>
-                        <span className="text-green-400">● API Connected</span>
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                        <div>
+                            <p className="text-[11px] font-semibold text-white">Claude 3.5 Sonnet</p>
+                            <p className="text-[10px] text-emerald-400/80">AI Engine Active</p>
+                        </div>
                     </div>
                 </div>
             </aside>

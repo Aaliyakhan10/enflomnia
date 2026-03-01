@@ -5,10 +5,11 @@ from datetime import datetime
 
 class ScriptRequestIn(BaseModel):
     creator_id: str
-    topic: str                       # e.g. "sustainable skincare routine"
+    topic: Optional[str] = None      # Optional if reel_id is provided
+    reel_id: Optional[str] = None    # Used to infer topic from an existing reel
     brand_name: Optional[str] = None
-    brand_brief: Optional[str] = None  # what the brand wants to highlight
-    tone: str = "entertaining"       # educational | entertaining | inspiring
+    brand_brief: Optional[str] = None
+    tone: str = "entertaining"
 
 
 class ScriptSection(BaseModel):

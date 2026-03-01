@@ -23,6 +23,7 @@ class Comment(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     creator_id = Column(String, ForeignKey("creators.id"), nullable=False)
+    ig_media_id = Column(String, nullable=True, index=True)
     platform = Column(String, nullable=False, default="instagram")
     content = Column(String, nullable=False)
     author = Column(String, nullable=False)

@@ -46,8 +46,9 @@ class MatchOut(BaseModel):
 
 class MatchRequestIn(BaseModel):
     creator_id: str
-    niche: str
-    platform: str
-    follower_count: int
-    engagement_rate: float
+    reel_id: Optional[str] = None
+    niche: Optional[str] = "general"
+    platform: Optional[str] = "instagram"
+    follower_count: Optional[int] = None
+    engagement_rate: Optional[float] = None
     audience_description: Optional[str] = None  # e.g. "25-34 male gaming enthusiasts"

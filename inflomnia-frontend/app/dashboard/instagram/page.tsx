@@ -57,19 +57,35 @@ export default function InstagramPage() {
         } catch { }
     }
 
-    async function handleConnect(e: React.FormEvent) {
-        e.preventDefault();
-        if (!token) return;
+    async function handleConnect(e: React.FormEvent, isDemo = false) {
+        if (e) e.preventDefault();
+        const finalToken = isDemo ? "mock-direct-connect-token" : token;
+        if (!finalToken) return;
+
         setLoading(true); setError("");
         try {
             const a = await apiFetch(`/api/v1/instagram/connect`, {
                 method: "POST",
-                body: JSON.stringify({ creator_id: CREATOR_ID, access_token: token }),
+                body: JSON.stringify({ creator_id: CREATOR_ID, access_token: finalToken }),
             });
             setAccount(a);
             setToken("");
         } catch (err: any) {
-            setError(err.message || "Failed to connect. Check your token.");
+            setError(err.message || "Failed to connect to Instagram.");
+        }
+        setLoading(false);
+    }
+
+    async function handleDisconnect() {
+        setLoading(true);
+        try {
+            await apiFetch(`/api/v1/instagram/disconnect/${CREATOR_ID}`, { method: "POST" });
+            setAccount(null);
+            setReels([]);
+            setAnalysis(null);
+            setToken("");
+        } catch (err: any) {
+            setError(err.message || "Failed to disconnect.");
         }
         setLoading(false);
     }
@@ -115,6 +131,10 @@ export default function InstagramPage() {
                             {analyzing ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
                             {analyzing ? "Analyzing…" : "Analyze with Claude"}
                         </button>
+                        <button onClick={handleDisconnect} disabled={loading}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 text-sm hover:bg-red-500/20 transition-all ml-4 border border-red-500/20">
+                            Disconnect
+                        </button>
                     </div>
                 )}
             </div>
@@ -134,28 +154,27 @@ export default function InstagramPage() {
                         <p className="text-gray-500 text-sm mt-1">Paste your access token to start analyzing your reels</p>
                     </div>
 
-                    <div className="rounded-lg p-4 space-y-2 text-xs" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
-                        <p className="font-semibold text-indigo-300">How to get your access token (2 min):</p>
-                        <ol className="list-decimal list-inside space-y-1 text-gray-400">
-                            <li>Go to <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noreferrer" className="text-indigo-400 underline">Graph API Explorer</a></li>
-                            <li>Select your Meta App (or create one)</li>
-                            <li>Click <strong className="text-white">Get User Access Token</strong></li>
-                            <li>Add permissions: <code className="bg-white/10 px-1 rounded">instagram_basic</code> + <code className="bg-white/10 px-1 rounded">instagram_manage_insights</code></li>
-                            <li>Copy the token and paste below</li>
-                        </ol>
+                    <div className="rounded-lg p-4 space-y-3 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                        <p className="text-sm font-semibold text-indigo-300">How to connect safely:</p>
+                        <p className="text-xs text-gray-400">Provide an Instagram Graph API User Token. You can generate one via the Meta App Explorer.</p>
+                        <button onClick={(e) => handleConnect(e, true)} disabled={loading}
+                            type="button"
+                            className="text-xs text-white bg-white/10 hover:bg-white/20 py-1.5 px-3 rounded mt-2 transition-colors border border-white/10">
+                            Just want to look around? Try Demo Mode
+                        </button>
                     </div>
 
-                    <form onSubmit={handleConnect} className="space-y-3">
+                    <form onSubmit={(e) => handleConnect(e, false)} className="pt-2 space-y-3">
                         <div>
                             <label className="text-xs text-gray-500 mb-1 block">Access Token</label>
-                            <textarea rows={3} value={token} onChange={e => setToken(e.target.value)}
+                            <textarea rows={2} value={token} onChange={e => setToken(e.target.value)}
                                 placeholder="EAABwzLixnjYBO..."
                                 className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-pink-500 resize-none" />
                         </div>
                         <button type="submit" disabled={loading || !token}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold hover:opacity-90 transition-all disabled:opacity-50">
-                            {loading ? <Loader size={14} className="animate-spin" /> : <Instagram size={14} />}
-                            {loading ? "Connecting…" : "Connect Account"}
+                            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100">
+                            {loading ? <Loader size={16} className="animate-spin" /> : <Instagram size={16} />}
+                            {loading ? "Connecting securely…" : "Log in with Instagram"}
                         </button>
                     </form>
                 </div>

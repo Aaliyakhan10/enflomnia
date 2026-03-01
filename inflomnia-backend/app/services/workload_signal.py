@@ -8,11 +8,11 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from sqlalchemy.orm import Session
 
-from app.models.comment import Comment
-from app.models.reach_snapshot import ReachSnapshot
+from app.models.reel import Reel
 from app.models.workload_signal import WorkloadSignal
 from app.integrations.bedrock_client import BedrockClient
 from app.integrations.s3_client import S3Client
+from app.services.mock_data_service import seed_mock_instagram_data
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -32,15 +32,11 @@ class WorkloadSignalService:
         Build a day-of-week × hour engagement heatmap from the last N days.
         Returns a dict: { "Monday": [score_h0..score_h23], ... }
         """
+        seed_mock_instagram_data(db, creator_id)
         cutoff = datetime.utcnow() - timedelta(days=days)
-        comments = (
-            db.query(Comment)
-            .filter(Comment.creator_id == creator_id, Comment.timestamp >= cutoff)
-            .all()
-        )
-        reach_snaps = (
-            db.query(ReachSnapshot)
-            .filter(ReachSnapshot.creator_id == creator_id, ReachSnapshot.recorded_at >= cutoff)
+        reels = (
+            db.query(Reel)
+            .filter(Reel.creator_id == creator_id, Reel.published_at >= cutoff)
             .all()
         )
 
@@ -48,18 +44,15 @@ class WorkloadSignalService:
         matrix = defaultdict(lambda: defaultdict(float))
         counts = defaultdict(lambda: defaultdict(int))
 
-        for c in comments:
-            dow = c.timestamp.strftime("%A")
-            hour = c.timestamp.hour
-            matrix[dow][hour] += c.engagement_score or 0.5
-            counts[dow][hour] += 1
-
-        for s in reach_snaps:
-            dow = s.recorded_at.strftime("%A")
-            hour = s.recorded_at.hour
-            # Normalise reach to 0-1 against max observed
-            max_reach = max((r.reach for r in reach_snaps), default=1)
-            matrix[dow][hour] += s.reach / max(max_reach, 1)
+        for r in reels:
+            dow = r.published_at.strftime("%A")
+            hour = r.published_at.hour
+            
+            # Simple combined score: like + comments (or total_interactions if available)
+            eng = r.total_interactions or ((r.like_count or 0) + (r.comments_count or 0))
+            
+            # Add to heatmap
+            matrix[dow][hour] += eng
             counts[dow][hour] += 1
 
         # Average and fill
@@ -160,7 +153,7 @@ class WorkloadSignalService:
     def _generate_claude_signal(self, pattern_summary: dict) -> dict:
         """Ask Claude 3.5 to generate the workload signal recommendation."""
         try:
-            prompt = f"""Analyse this creator's engagement patterns and recommend a posting strategy.
+            prompt = f"""Analyse this creator's engagement patterns and recommend a posting strategy to maximize reach while preventing creator burnout.
 
 Pattern data:
 - Top engagement days: {pattern_summary['top_days']}
@@ -173,7 +166,7 @@ Return ONLY valid JSON with these exact keys:
   "signal_type": "reduce" | "maintain" | "increase",
   "recommended_posts_per_week": <integer 1-14>,
   "best_days": ["Day1", "Day2", "Day3"],
-  "reasoning": "<2 sentences, friendly, actionable>"
+  "reasoning": "<2-3 sentences, friendly, actionable. Explicitly state WHY these days/cadence are recommended based on the supplied data.>"
 }}"""
 
             return self.bedrock.invoke_claude_json(prompt)

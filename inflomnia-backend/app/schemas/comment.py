@@ -7,6 +7,7 @@ class CommentIn(BaseModel):
     content: str
     author: str
     platform: str = "instagram"
+    ig_media_id: Optional[str] = None
 
 
 class CommentBatchIn(BaseModel):
@@ -21,6 +22,7 @@ class CommentOut(BaseModel):
     category: str
     confidence: float
     engagement_score: float
+    ig_media_id: Optional[str] = None
     creator_feedback: Optional[str] = None
 
     class Config:

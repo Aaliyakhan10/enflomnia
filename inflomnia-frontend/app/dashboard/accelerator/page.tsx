@@ -38,9 +38,9 @@ export default function AcceleratorHome() {
             {/* Hero */}
             <div className="text-center py-8">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 mb-4">
-                    <Rocket size={12} /> Monetization Accelerator · Phase 1
+                    <Rocket size={12} /> Monetization Hub
                 </div>
-                <h1 className="text-4xl font-bold text-white mb-3">The Accelerator</h1>
+                <h1 className="text-4xl font-bold text-white mb-3">Monetization Tools</h1>
                 <p className="text-gray-400 text-lg max-w-xl mx-auto leading-relaxed">
                     Fair pricing, better scripts, and the right brand partners — all powered by Claude 3.5 Sonnet
                 </p>

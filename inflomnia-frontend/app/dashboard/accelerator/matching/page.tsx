@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Users, Plus, Loader, X } from "lucide-react";
-import { matchingApi } from "@/lib/api";
+import { Users, Plus, Loader, X, Play } from "lucide-react";
+import { matchingApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
 const INDUSTRIES = ["fitness", "beauty", "tech", "gaming", "food", "travel", "fashion", "finance", "education", "lifestyle"];
@@ -24,8 +24,8 @@ export default function MatchingPage() {
     const [tab, setTab] = useState<"matches" | "brands">("matches");
 
     const [creatorForm, setCreatorForm] = useState({
-        niche: "fitness", platform: "instagram",
-        follower_count: "50000", engagement_rate: "4.5",
+        niche: "fitness", platform: "instagram", reel_id: "",
+        follower_count: "", engagement_rate: "",
         audience_description: "",
     });
 
@@ -33,18 +33,21 @@ export default function MatchingPage() {
         name: "", industry: "fitness", target_audience: "",
         content_niches: "", budget_range_min: "", budget_range_max: "",
     });
+    const [reels, setReels] = useState<any[]>([]);
 
     useEffect(() => { loadData(); }, []);
 
     async function loadData() {
         setLoading(true);
         try {
-            const [matchRes, brandRes] = await Promise.all([
+            const [matchRes, brandRes, reelRes] = await Promise.all([
                 matchingApi.getMatches(CREATOR_ID),
                 matchingApi.getBrands(),
+                instagramApi.getReels(CREATOR_ID).catch(() => ({ data: [] })),
             ]);
             setMatches(matchRes.data || []);
             setBrands(brandRes.data || []);
+            setReels(reelRes.data || []);
         } catch { }
         setLoading(false);
     }
@@ -56,8 +59,9 @@ export default function MatchingPage() {
                 creator_id: CREATOR_ID,
                 niche: creatorForm.niche,
                 platform: creatorForm.platform,
-                follower_count: parseInt(creatorForm.follower_count),
-                engagement_rate: parseFloat(creatorForm.engagement_rate) / 100,
+                reel_id: creatorForm.reel_id || undefined,
+                follower_count: creatorForm.follower_count ? parseInt(creatorForm.follower_count) : undefined,
+                engagement_rate: creatorForm.engagement_rate ? parseFloat(creatorForm.engagement_rate) / 100 : undefined,
                 audience_description: creatorForm.audience_description || undefined,
             });
             setMatches(res.data || []);
@@ -164,9 +168,35 @@ export default function MatchingPage() {
                             </select>
                         </div>
                     ))}
+
+                    <div>
+                        <label className="text-xs text-indigo-400 mb-1 block font-bold flex items-center gap-1">
+                            <Play size={12} /> Select a Reel
+                        </label>
+                        <select value={creatorForm.reel_id} onChange={e => { cu("reel_id", e.target.value); cu("engagement_rate", ""); cu("follower_count", ""); }}
+                            className="w-full px-2 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-white text-xs focus:outline-none focus:border-indigo-500">
+                            <option value="">No reel (Profile Avg)</option>
+                            {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 30) || "Video"}...</option>)}
+                        </select>
+                    </div>
+
+                    {!creatorForm.reel_id && (
+                        <>
+                            {[
+                                { label: "Followers Override", key: "follower_count", placeholder: "Auto" },
+                                { label: "Engagement % Override", key: "engagement_rate", placeholder: "Auto" },
+                            ].map(({ label, key, placeholder }) => (
+                                <div key={key}>
+                                    <label className="text-xs text-gray-500 mb-1 block">{label}</label>
+                                    <input type="text" placeholder={placeholder} value={(creatorForm as any)[key]}
+                                        onChange={e => cu(key, e.target.value)}
+                                        className="w-full px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500" />
+                                </div>
+                            ))}
+                        </>
+                    )}
+
                     {[
-                        { label: "Followers", key: "follower_count", placeholder: "50000" },
-                        { label: "Engagement %", key: "engagement_rate", placeholder: "4.5" },
                         { label: "Audience (optional)", key: "audience_description", placeholder: "25-34 fitness fans" },
                     ].map(({ label, key, placeholder }) => (
                         <div key={key}>

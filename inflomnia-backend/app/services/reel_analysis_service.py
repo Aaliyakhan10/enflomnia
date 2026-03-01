@@ -16,6 +16,7 @@ from app.integrations.instagram_client import InstagramClient
 from app.integrations.bedrock_client import BedrockClient
 from app.models.instagram_account import InstagramAccount
 from app.models.reel import Reel
+from app.services.mock_data_service import seed_mock_instagram_data
 
 
 class ReelAnalysisService:
@@ -27,6 +28,13 @@ class ReelAnalysisService:
 
     def connect_account(self, db: Session, creator_id: str, access_token: str) -> InstagramAccount:
         """Validate token, fetch account info, store/update in DB."""
+        if access_token.startswith("mock"):
+            seed_mock_instagram_data(db, creator_id)
+            account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+            account.access_token = access_token
+            db.commit()
+            return account
+
         client = InstagramClient(access_token)
         me = client.get_me()
 
@@ -51,11 +59,26 @@ class ReelAnalysisService:
     def get_account(self, db: Session, creator_id: str) -> Optional[InstagramAccount]:
         return db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
 
+    def disconnect_account(self, db: Session, creator_id: str):
+        account = self.get_account(db, creator_id)
+        if account:
+            db.query(Reel).filter(Reel.creator_id == creator_id).delete()
+            db.delete(account)
+            db.commit()
+        return {"success": True}
+
     # ── Fetch & sync reels ───────────────────────────────────────────────────
 
     def sync_reels(self, db: Session, creator_id: str, limit: int = 20) -> list[Reel]:
         """Fetch latest reels + insights from Instagram and upsert into DB."""
         account = self._get_account_or_raise(db, creator_id)
+        
+        if account.access_token.startswith("mock"):
+            seed_mock_instagram_data(db, creator_id)
+            account.last_synced_at = datetime.now(timezone.utc)
+            db.commit()
+            return self.get_reels(db, creator_id)
+
         client = InstagramClient(account.access_token)
 
         raw_reels = client.get_reels(account.ig_user_id, limit=limit)
@@ -90,6 +113,7 @@ class ReelAnalysisService:
         return stored
 
     def get_reels(self, db: Session, creator_id: str) -> list[Reel]:
+        seed_mock_instagram_data(db, creator_id)
         return (
             db.query(Reel)
             .filter(Reel.creator_id == creator_id)
@@ -125,7 +149,7 @@ class ReelAnalysisService:
                 "avg_watch_time_s": round(r.avg_watch_time_ms / 1000, 1) if r.avg_watch_time_ms else None,
             })
 
-        prompt = f"""You are analyzing Instagram Reels performance data for a creator.
+        prompt = f"""You are an elite Instagram growth analyst auditing a creator's Reels performance data.
 
 Creator: @{account.username or creator_id}
 Followers: {account.followers_count or "unknown"}
@@ -135,15 +159,15 @@ Here are their top {len(reel_summaries)} reels:
 
 Return a JSON object with EXACTLY these keys:
 {{
-  "overall_insights": "2-3 sentence summary of what's working and what isn't",
-  "top_performing_pattern": "what the best-performing reels have in common",
-  "recommended_posting_style": "specific recommendation for hook style, pacing, CTA",
+  "overall_insights": "A punchy, 2-3 sentence summary of what's working and what's failing. Quote specific metrics (e.g., watch time vs reach).",
+  "top_performing_pattern": "What the absolute best-performing reels have in common structurally (e.g., 3-second hook, fast pacing, specific topic).",
+  "recommended_posting_style": "Strict, actionable recommendation for hook style, pacing, and CTA for their next batch of content.",
   "reel_scores": [
-    {{"index": 0, "hook_quality": 7.5, "analysis": "one sentence about this reel"}}
+    {{"index": 0, "hook_quality": 7.5, "analysis": "Harsh, specific critique of this reel's performance based on the data provided."}}
   ]
 }}
 
-Be specific, data-driven, and actionable. Return ONLY valid JSON."""
+Be highly specific, data-driven, and actionable. Avoid generic advice like 'make engaging content'. Return ONLY valid JSON."""
 
         try:
             raw = self.bedrock.invoke_claude(prompt, system="You are a social media analytics expert.", max_tokens=600)
