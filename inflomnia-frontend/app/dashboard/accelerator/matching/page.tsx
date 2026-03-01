@@ -154,121 +154,74 @@ export default function MatchingPage() {
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                 {/* Creator Profile Sidebar */}
-                <div className="card space-y-3 md:col-span-1 self-start">
-                    <h2 className="font-semibold text-white text-xs uppercase tracking-wider">Your Profile</h2>
-                    {[
-                        { label: "Niche", key: "niche", options: NICHES },
-                        { label: "Platform", key: "platform", options: ["instagram", "youtube", "tiktok"] },
-                    ].map(({ label, key, options }) => (
-                        <div key={key}>
-                            <label className="text-xs text-gray-500 mb-1 block">{label}</label>
-                            <select value={(creatorForm as any)[key]} onChange={e => cu(key, e.target.value)}
-                                className="w-full px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500">
-                                {options.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                        </div>
-                    ))}
-
-                    <div>
-                        <label className="text-xs text-indigo-400 mb-1 block font-bold flex items-center gap-1">
-                            <Play size={12} /> Select a Reel
-                        </label>
-                        <select value={creatorForm.reel_id} onChange={e => { cu("reel_id", e.target.value); cu("engagement_rate", ""); cu("follower_count", ""); }}
-                            className="w-full px-2 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-white text-xs focus:outline-none focus:border-indigo-500">
-                            <option value="">No reel (Profile Avg)</option>
-                            {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 30) || "Video"}...</option>)}
-                        </select>
-                    </div>
-
-                    {!creatorForm.reel_id && (
-                        <>
-                            {[
-                                { label: "Followers Override", key: "follower_count", placeholder: "Auto" },
-                                { label: "Engagement % Override", key: "engagement_rate", placeholder: "Auto" },
-                            ].map(({ label, key, placeholder }) => (
-                                <div key={key}>
-                                    <label className="text-xs text-gray-500 mb-1 block">{label}</label>
-                                    <input type="text" placeholder={placeholder} value={(creatorForm as any)[key]}
-                                        onChange={e => cu(key, e.target.value)}
-                                        className="w-full px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500" />
-                                </div>
-                            ))}
-                        </>
-                    )}
-
-                    {[
-                        { label: "Audience (optional)", key: "audience_description", placeholder: "25-34 fitness fans" },
-                    ].map(({ label, key, placeholder }) => (
-                        <div key={key}>
-                            <label className="text-xs text-gray-500 mb-1 block">{label}</label>
-                            <input type="text" placeholder={placeholder} value={(creatorForm as any)[key]}
-                                onChange={e => cu(key, e.target.value)}
-                                className="w-full px-2 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs focus:outline-none focus:border-indigo-500" />
-                        </div>
-                    ))}
+                <div className="card space-y-4 md:col-span-1 self-start">
+                    <h2 className="font-semibold text-white text-xs uppercase tracking-wider">AI Profile Engine</h2>
+                    <p className="text-[10px] text-gray-400 leading-relaxed">
+                        Inflomnia automatically synthesizes your connected Instagram account's follower demographics, engagement rate, and niche analysis to find the best brand matches.
+                    </p>
                     <button onClick={handleFindMatches} disabled={matching || brands.length === 0}
-                        className="w-full py-2 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                        className="w-full py-2.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                         {matching ? <Loader size={12} className="animate-spin" /> : null}
-                        {matching ? "Matching…" : "Find Matches"}
+                        {matching ? "Matching…" : "Auto-Find Matches"}
                     </button>
                     {brands.length === 0 && (
-                        <p className="text-[10px] text-yellow-500 text-center">Add brands first ↗</p>
+                        <p className="text-[10px] text-yellow-500 text-center">Add brands to match first.</p>
                     )}
                 </div>
+            </div>
 
-                {/* Matches */}
-                <div className="md:col-span-3 space-y-3">
-                    {loading ? (
-                        <div className="card flex items-center justify-center py-16 text-gray-500 text-sm">
-                            <Loader size={16} className="animate-spin mr-2" /> Loading…
-                        </div>
-                    ) : matches.length === 0 ? (
-                        <div className="card text-center py-12">
-                            <p className="text-gray-500 text-sm mb-2">No matches yet.</p>
-                            <p className="text-gray-600 text-xs">Add some brands and click "Find Matches".</p>
-                        </div>
-                    ) : matches.map((m: any) => (
-                        <div key={m.id} className="card space-y-3">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h3 className="font-bold text-white">{m.brand_name}</h3>
-                                    <span className="text-xs text-gray-500 capitalize">{m.brand_industry}</span>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-2xl font-bold text-indigo-300">{(m.relevance_score * 100).toFixed(0)}%</div>
-                                    <div className="text-[10px] text-gray-500">match</div>
-                                </div>
+            {/* Matches */}
+            <div className="md:col-span-3 space-y-3">
+                {loading ? (
+                    <div className="card flex items-center justify-center py-16 text-gray-500 text-sm">
+                        <Loader size={16} className="animate-spin mr-2" /> Loading…
+                    </div>
+                ) : matches.length === 0 ? (
+                    <div className="card text-center py-12">
+                        <p className="text-gray-500 text-sm mb-2">No matches yet.</p>
+                        <p className="text-gray-600 text-xs">Add some brands and click "Find Matches".</p>
+                    </div>
+                ) : matches.map((m: any) => (
+                    <div key={m.id} className="card space-y-3">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h3 className="font-bold text-white">{m.brand_name}</h3>
+                                <span className="text-xs text-gray-500 capitalize">{m.brand_industry}</span>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span>Niche fit</span>
-                                        <span className="text-white">{(m.niche_match * 100).toFixed(0)}%</span>
-                                    </div>
-                                    <ScoreBar value={m.niche_match || 0} color="#6366f1" />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between mb-1">
-                                        <span>Audience overlap</span>
-                                        <span className="text-white">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
-                                    </div>
-                                    <ScoreBar value={m.audience_overlap || 0} color="#22c55e" />
-                                </div>
+                            <div className="text-right">
+                                <div className="text-2xl font-bold text-indigo-300">{(m.relevance_score * 100).toFixed(0)}%</div>
+                                <div className="text-[10px] text-gray-500">match</div>
                             </div>
-
-                            <p className="text-gray-400 text-sm leading-relaxed">{m.fit_reasoning}</p>
-
-                            {(m.budget_range_min || m.budget_range_max) && (
-                                <p className="text-xs text-gray-600">
-                                    Budget: <strong className="text-gray-400">
-                                        ${m.budget_range_min?.toFixed(0) || "?"} – ${m.budget_range_max?.toFixed(0) || "?"}
-                                    </strong>
-                                </p>
-                            )}
                         </div>
-                    ))}
-                </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <span>Niche fit</span>
+                                    <span className="text-white">{(m.niche_match * 100).toFixed(0)}%</span>
+                                </div>
+                                <ScoreBar value={m.niche_match || 0} color="#6366f1" />
+                            </div>
+                            <div>
+                                <div className="flex justify-between mb-1">
+                                    <span>Audience overlap</span>
+                                    <span className="text-white">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
+                                </div>
+                                <ScoreBar value={m.audience_overlap || 0} color="#22c55e" />
+                            </div>
+                        </div>
+
+                        <p className="text-gray-400 text-sm leading-relaxed">{m.fit_reasoning}</p>
+
+                        {(m.budget_range_min || m.budget_range_max) && (
+                            <p className="text-xs text-gray-600">
+                                Budget: <strong className="text-gray-400">
+                                    ${m.budget_range_min?.toFixed(0) || "?"} – ${m.budget_range_max?.toFixed(0) || "?"}
+                                </strong>
+                            </p>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     );

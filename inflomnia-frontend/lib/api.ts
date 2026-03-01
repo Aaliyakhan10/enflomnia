@@ -107,4 +107,22 @@ export const matchingApi = {
         api.get(`/api/v1/matching/matches/${creatorId}`),
 };
 
+// ── Scheduler ─────────────────────────────────────────────────────────────
+export const schedulerApi = {
+    getSchedule: (creatorId: string) =>
+        api.get(`/api/v1/scheduler/${creatorId}`),
+
+    createItem: (creatorId: string, item: any) =>
+        api.post(`/api/v1/scheduler/${creatorId}`, item),
+
+    updateItem: (creatorId: string, itemId: string, item: any) =>
+        api.put(`/api/v1/scheduler/${creatorId}/${itemId}`, item),
+
+    deleteItem: (creatorId: string, itemId: string) =>
+        api.delete(`/api/v1/scheduler/${creatorId}/${itemId}`),
+
+    generateSmartPlan: (creatorId: string, daysAhead: number = 7) =>
+        api.post(`/api/v1/scheduler/smart-plan/generate`, { creator_id: creatorId, days_ahead: daysAhead }),
+};
+
 export default api;

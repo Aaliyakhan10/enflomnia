@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.integrations.bedrock_client import BedrockClient
 from app.models.reel import Reel
 from app.models.instagram_account import InstagramAccount
-from app.services.mock_data_service import get_mock_creator_metrics
 
 
 class PredictionService:
@@ -24,18 +23,26 @@ class PredictionService:
 
     def generate_content_suggestions(self, db: Session, creator_id: str) -> List[Dict[str, Any]]:
         """Suggests 3 new formats/topics based on recent top-performing reels."""
-        metrics = get_mock_creator_metrics(db, creator_id)
+        account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+        follower_count = account.followers_count if account else 0
+        niche = "general" # Can be updated if we add niche to the IG account model
+        
+        reels = db.query(Reel).filter(Reel.creator_id == creator_id).all()
+        
+        # Calculate real ER from reels
+        total_reach = sum(r.reach or 0 for r in reels)
+        total_interactions = sum(r.total_interactions or 0 for r in reels)
+        engagement_rate = (total_interactions / total_reach) if total_reach > 0 else 0
         
         # Get top 5 reels by interaction
-        reels = db.query(Reel).filter(Reel.creator_id == creator_id).all()
         reels.sort(key=lambda x: x.total_interactions or 0, reverse=True)
         top_reels = reels[:5]
 
         context_str = "\n".join([f"- Captions: '{r.caption[:50]}...', Reach: {r.reach}, Interactions: {r.total_interactions}" for r in top_reels])
         
         prompt = f"""You are an elite Instagram growth strategist. 
-The creator is in the '{metrics['niche']}' niche with {metrics['follower_count']} followers.
-Their average engagement rate is {metrics['engagement_rate']:.1%}.
+The creator is in the '{niche}' niche with {follower_count} followers.
+Their average engagement rate is {engagement_rate:.1%}.
 
 Here are their recent top performing reels:
 {context_str}
@@ -99,12 +106,14 @@ Return ONLY valid JSON:
 
     def find_competitors_and_trends(self, db: Session, creator_id: str, niche: str) -> Dict[str, Any]:
         """Simulates finding competitors and identifying emerging trends."""
-        metrics = get_mock_creator_metrics(db, creator_id)
+        account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+        follower_count = account.followers_count if account else 0
+        
         # In a real app, this queries OpenSearch. 
         # Here we mock the outcome via Claude to simulate the intelligence layer.
         
         prompt = f"""You are an Instagram trends analyst. 
-The creator is in the '{niche}' niche with {metrics['follower_count']} followers.
+The creator is in the '{niche}' niche with {follower_count} followers.
 
 Identify exactly 2 emerging content trends in the '{niche}' space that haven't hit mainstream saturation yet.
 Provide a highly actionable description for how the creator can immediately capitalize on this trend in their next video.
@@ -134,11 +143,17 @@ Return ONLY valid JSON:
 
     def simulate_growth(self, db: Session, creator_id: str) -> Dict[str, Any]:
         """Projects 3, 6, and 12-month follower/reach trajectories & pivot strategies."""
-        metrics = get_mock_creator_metrics(db, creator_id)
-        current_followers = metrics['follower_count']
+        account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+        current_followers = account.followers_count if account else 0
+        niche = "general"
+        
+        reels = db.query(Reel).filter(Reel.creator_id == creator_id).all()
+        total_reach = sum(r.reach or 0 for r in reels)
+        total_interactions = sum(r.total_interactions or 0 for r in reels)
+        engagement_rate = (total_interactions / total_reach) if total_reach > 0 else 0
         
         prompt = f"""You are a predictive data modeler for social media.
-The creator has {current_followers} followers, {metrics['engagement_rate']:.1%} engagement in the '{metrics['niche']}' niche.
+The creator has {current_followers} followers, {engagement_rate:.1%} engagement in the '{niche}' niche.
 
 Provide a conservative but realistic 3, 6, and 12-month growth projection based on compound growth.
 Also provide 1 multi-stage strategic pivot recommendation to hit or exceed these numbers (e.g., what to do now vs what to do in 6 months).

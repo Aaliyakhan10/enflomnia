@@ -85,82 +85,19 @@ export default function PricingPage() {
 
             {tab === "estimate" ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {/* Form */}
-                    <form onSubmit={handleEstimate} className="card space-y-4">
-                        <h2 className="font-semibold text-white text-sm uppercase tracking-wider">Creator Profile</h2>
+                    {/* Auto-Pricing Panel */}
+                    <div className="card space-y-4 self-start">
+                        <h2 className="font-semibold text-white text-sm uppercase tracking-wider">AI Pricing Engine</h2>
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            We automatically analyze your synced Instagram profile, follower demographics, and recent Reel engagement to instantly calculate your optimum market rate.
+                        </p>
 
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-gray-500 mb-1 block">Platform</label>
-                                <select value={form.platform} onChange={e => update("platform", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500">
-                                    {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 mb-1 block">Deliverable</label>
-                                <select value={form.deliverable_type} onChange={e => update("deliverable_type", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500">
-                                    {DELIVERABLES.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-xs text-green-400 mb-1 block font-bold flex items-center gap-1">
-                                <Play size={12} /> Select a Reel (Auto-Engagement)
-                            </label>
-                            <select value={form.reel_id} onChange={e => { update("reel_id", e.target.value); update("engagement_rate", ""); update("follower_count", ""); }}
-                                className="w-full px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/30 text-white text-sm focus:outline-none focus:border-green-500">
-                                <option value="">No reel (Use Profile Average)</option>
-                                {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 50) || "Video"}...</option>)}
-                            </select>
-                            <p className="text-[10px] text-gray-500 mt-1">If selected, custom rate is calculated directly from this reel's metrics.</p>
-                        </div>
-
-                        {!form.reel_id && (
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Followers Override</label>
-                                    <input type="number" placeholder="Auto" value={form.follower_count} onChange={e => update("follower_count", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
-                                </div>
-
-                                <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Engagement % Override</label>
-                                    <input type="number" step="0.1" placeholder="Auto" value={form.engagement_rate} onChange={e => update("engagement_rate", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
-                                </div>
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Niche</label>
-                            <select value={form.niche} onChange={e => update("niche", e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500">
-                                {NICHES.map(n => <option key={n} value={n}>{n}</option>)}
-                            </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="text-xs text-gray-500 mb-1 block">Brand Name (optional)</label>
-                                <input type="text" placeholder="e.g. Nike" value={form.brand_name} onChange={e => update("brand_name", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 mb-1 block">Their Offer $ (optional)</label>
-                                <input type="number" placeholder="500" value={form.offered_price} onChange={e => update("offered_price", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
-                            </div>
-                        </div>
-
-                        <button type="submit" disabled={loading}
+                        <button onClick={handleEstimate} disabled={loading}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-green-500 text-white text-sm font-medium hover:bg-green-600 transition-all">
                             {loading ? <Loader size={14} className="animate-spin" /> : <DollarSign size={14} />}
-                            {loading ? "Calculating…" : "Get Price Range"}
+                            {loading ? "Calculating Rate…" : "Auto-Calculate Rate"}
                         </button>
-                    </form>
+                    </div>
 
                     {/* Result */}
                     <div className="space-y-4">

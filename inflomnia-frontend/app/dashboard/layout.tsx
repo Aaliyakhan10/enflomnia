@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, TrendingDown, Zap, LayoutDashboard, DollarSign, FileText, Users, Rocket, Instagram, Lightbulb } from "lucide-react";
+import { Shield, TrendingDown, Zap, LayoutDashboard, DollarSign, FileText, Users, Rocket, Instagram, Lightbulb, Calendar } from "lucide-react";
 
 const shieldNav = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -19,6 +19,7 @@ const acceleratorNav = [
 
 const intelligenceNav = [
     { href: "/dashboard/intelligence", label: "Insights & Strategy", icon: Lightbulb },
+    { href: "/dashboard/scheduler", label: "Content Scheduler", icon: Calendar },
 ];
 
 function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {

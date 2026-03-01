@@ -16,13 +16,7 @@ const BADGE_MAP: Record<string, string> = {
     safe: "badge-safe",
 };
 
-const SAMPLE_COMMENTS = [
-    { content: "Check my profile for free followers!! DM to collab 🔥🔥🔥🔥🔥", author: "bot_acc_123" },
-    { content: "Your editing style is incredible. How do you achieve that colour grading?", author: "real_fan_42" },
-    { content: "This is literally the worst content I've ever seen. You should quit.", author: "anon_troll" },
-    { content: "Nice video!", author: "user789" },
-    { content: "I've been following you for 3 years and this is your best work. Keep going!", author: "longtime_viewer" },
-];
+
 
 export default function ShieldPage() {
     const [tab, setTab] = useState<Tab>("all");
@@ -49,7 +43,7 @@ export default function ShieldPage() {
     async function handleAnalyze() {
         setAnalyzing(true);
         try {
-            await commentsApi.analyzeBatch(CREATOR_ID, SAMPLE_COMMENTS);
+            await commentsApi.analyzeBatch(CREATOR_ID, []);
             fetchData();
         } catch { }
         setAnalyzing(false);
@@ -74,8 +68,8 @@ export default function ShieldPage() {
                 </div>
                 <button onClick={handleAnalyze} disabled={analyzing}
                     className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all">
-                    {analyzing ? <Loader size={14} className="animate-spin" /> : <Send size={14} />}
-                    {analyzing ? "Analysing…" : "Run Demo Analysis"}
+                    {analyzing ? <Loader size={14} className="animate-spin" /> : <Shield size={14} />}
+                    {analyzing ? "Analysing…" : "Run Shield Analysis"}
                 </button>
             </div>
 

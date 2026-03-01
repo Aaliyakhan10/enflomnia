@@ -6,13 +6,13 @@ adjustments to prevent burnout using Claude 3.5 Sonnet reasoning.
 import json
 from datetime import datetime, timedelta
 from collections import defaultdict
+from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.reel import Reel
 from app.models.workload_signal import WorkloadSignal
 from app.integrations.bedrock_client import BedrockClient
 from app.integrations.s3_client import S3Client
-from app.services.mock_data_service import seed_mock_instagram_data
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
@@ -28,11 +28,7 @@ class WorkloadSignalService:
     # ------------------------------------------------------------------ #
 
     def compute_heatmap(self, db: Session, creator_id: str, days: int = 30) -> dict:
-        """
-        Build a day-of-week × hour engagement heatmap from the last N days.
-        Returns a dict: { "Monday": [score_h0..score_h23], ... }
-        """
-        seed_mock_instagram_data(db, creator_id)
+        """Compute an engagement heatmap based on recent reel data."""
         cutoff = datetime.utcnow() - timedelta(days=days)
         reels = (
             db.query(Reel)
@@ -104,7 +100,7 @@ class WorkloadSignalService:
         self.s3.archive_workload_signal(creator_id, result)
         return result
 
-    def get_latest_signal(self, db: Session, creator_id: str) -> dict | None:
+    def get_latest_signal(self, db: Session, creator_id: str) -> Optional[dict]:
         """Return the most recently generated signal for a creator."""
         signal = (
             db.query(WorkloadSignal)

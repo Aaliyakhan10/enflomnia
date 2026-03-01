@@ -62,63 +62,19 @@ export default function ScriptsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-                {/* Form */}
-                <form onSubmit={handleGenerate} className="card space-y-4 md:col-span-2">
-                    <h2 className="font-semibold text-white text-sm uppercase tracking-wider">Content Brief</h2>
+                {/* Auto-Generation Panel */}
+                <div className="card space-y-4 md:col-span-2 self-start">
+                    <h2 className="font-semibold text-white text-sm uppercase tracking-wider">AI Content Brief</h2>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                        Inflomnia will automatically analyze your latest Instagram Reels and profile niche to generate a highly-engaging script in your unique voice.
+                    </p>
 
-                    <div>
-                        <label className="text-xs text-yellow-400 mb-1 block font-bold flex items-center gap-1">
-                            <Play size={12} /> Select a Reel (Auto-Topics)
-                        </label>
-                        <select value={form.reel_id} onChange={e => { update("reel_id", e.target.value); update("topic", ""); }}
-                            className="w-full px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-white text-sm focus:outline-none focus:border-yellow-500">
-                            <option value="">No reel (Manual Topic)</option>
-                            {reels.map(r => <option key={r.id} value={r.id}>{r.caption?.substring(0, 50) || "Video"}...</option>)}
-                        </select>
-                    </div>
-
-                    {!form.reel_id && (
-                        <div>
-                            <label className="text-xs text-gray-500 mb-1 block">Manual Topic *</label>
-                            <input type="text" placeholder="e.g. morning skincare routine" value={form.topic}
-                                onChange={e => update("topic", e.target.value)} required={!form.reel_id}
-                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-yellow-500" />
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Brand Name (optional)</label>
-                        <input type="text" placeholder="e.g. CeraVe" value={form.brand_name}
-                            onChange={e => update("brand_name", e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-yellow-500" />
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-gray-500 mb-1 block">Brand Brief (optional)</label>
-                        <textarea rows={3} placeholder="What does the brand want highlighted?" value={form.brand_brief}
-                            onChange={e => update("brand_brief", e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-yellow-500 resize-none" />
-                    </div>
-
-                    <div>
-                        <label className="text-xs text-gray-500 mb-2 block">Tone</label>
-                        <div className="flex gap-2">
-                            {TONES.map(t => (
-                                <button key={t} type="button" onClick={() => update("tone", t)}
-                                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all ${form.tone === t ? "bg-yellow-500 text-black" : "bg-white/[0.05] text-gray-400 hover:text-white"
-                                        }`}>
-                                    {t}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <button type="submit" disabled={loading || (!form.topic && !form.reel_id)}
+                    <button onClick={handleGenerate} disabled={loading}
                         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-yellow-500 text-black text-sm font-bold hover:bg-yellow-400 transition-all disabled:opacity-50">
                         {loading ? <Loader size={14} className="animate-spin" /> : <FileText size={14} />}
-                        {loading ? "Generating…" : "Generate Script"}
+                        {loading ? "Generating…" : "Auto-Generate Script"}
                     </button>
-                </form>
+                </div>
 
                 {/* Result */}
                 <div className="md:col-span-3 space-y-4">

@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.pricing import PricingRequestIn, PricingResultOut, PricingHistoryOut
 from app.services.pricing_service import PricingService
-from app.services.mock_data_service import get_mock_creator_metrics
 from app.models.reel import Reel
+from app.models.instagram_account import InstagramAccount
 
 router = APIRouter(prefix="/api/v1/pricing", tags=["Pricing"])
 _svc = PricingService()
@@ -24,11 +24,25 @@ def estimate_price(payload: PricingRequestIn, db: Session = Depends(get_db)):
             if reel and reel.reach and reel.reach > 0:
                 engagement_rate = (reel.total_interactions or 0) / reel.reach
 
-        if follower_count is None or engagement_rate is None:
-            metrics = get_mock_creator_metrics(db, payload.creator_id)
-            follower_count = follower_count or metrics["follower_count"]
-            engagement_rate = engagement_rate or metrics["engagement_rate"]
-            niche = niche or metrics["niche"]
+        if follower_count is None or engagement_rate is None or niche is None:
+            account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == payload.creator_id).first()
+            if account:
+                follower_count = follower_count or account.followers_count or 0
+                
+                # Calculate real ER from reels
+                reels = db.query(Reel).filter(Reel.creator_id == payload.creator_id).all()
+                total_reach = sum(r.reach or 0 for r in reels)
+                total_interactions = sum(r.total_interactions or 0 for r in reels)
+                calc_er = total_interactions / total_reach if total_reach > 0 else 0
+                
+                engagement_rate = engagement_rate or calc_er
+                # No 'niche' on instagram account model yet, but matching/pricing needs one.
+                # Assuming UI provides it or fallback to 'general'
+                niche = niche or "general"
+            else:
+                follower_count = follower_count or 0
+                engagement_rate = engagement_rate or 0.0
+                niche = niche or "general"
 
         return _svc.estimate_price(
             db=db,

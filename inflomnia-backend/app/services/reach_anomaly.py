@@ -5,7 +5,7 @@ Uses OpenSearch for cross-creator RAG comparison, Claude 3.5 for reasoning.
 """
 import json
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from app.models.reach_snapshot import ReachSnapshot
@@ -14,7 +14,6 @@ from app.models.creator import Creator
 from app.integrations.bedrock_client import BedrockClient
 from app.integrations.opensearch_client import OpenSearchClient
 from app.integrations.s3_client import S3Client
-from app.services.mock_data_service import seed_mock_instagram_data
 
 
 class ReachAnomalyService:
@@ -60,12 +59,7 @@ class ReachAnomalyService:
     # ------------------------------------------------------------------ #
 
     def analyze(self, db: Session, creator_id: str) -> dict:
-        """
-        Main analysis method. Computes rolling baseline, detects drops,
-        checks if platform-wide by querying similar creators, then
-        calls Claude for a human-readable reasoning string.
-        """
-        seed_mock_instagram_data(db, creator_id)
+        """Analyze reach history to detect anomalies."""
         reels = (
             db.query(Reel)
             .filter(Reel.creator_id == creator_id)
@@ -133,7 +127,7 @@ class ReachAnomalyService:
             return 0.0
         return sum((i.reach or 0) for i in items) / len(items)
 
-    def _get_recent_similar_creators(self, db: Session, creator_id: str) -> list[str]:
+    def _get_recent_similar_creators(self, db: Session, creator_id: str) -> List[str]:
         """Get creator IDs from the same niche+follower bracket via DB (fallback if no OpenSearch)."""
         creator = db.query(Creator).filter(Creator.id == creator_id).first()
         if not creator:
@@ -154,7 +148,7 @@ class ReachAnomalyService:
         )
         return [r.id for r in similar]
 
-    def _detect_platform_wide(self, db: Session, similar_creator_ids: list[str]) -> bool:
+    def _detect_platform_wide(self, db: Session, similar_creator_ids: List[str]) -> bool:
         """Check if 30%+ of similar creators also experienced drops in the last 48h."""
         if not similar_creator_ids:
             return False
