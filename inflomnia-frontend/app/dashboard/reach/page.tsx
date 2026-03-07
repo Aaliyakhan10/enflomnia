@@ -65,7 +65,7 @@ export default function ReachPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">Reach Health</h1>
+                    <h1 className="text-2xl font-bold text-gray-900">Reach Health</h1>
                     <p className="text-gray-500 text-sm mt-0.5">Detects creator-specific vs platform-wide drops</p>
                 </div>
                 <button onClick={fetchData} disabled={loading}
@@ -77,13 +77,13 @@ export default function ReachPage() {
 
             {/* Anomaly Alert */}
             {analysis && (
-                <div className={`card flex items-start gap-4 ${analysis.anomaly_type !== "none" ? "border-yellow-500/30" : ""}`}>
+                <div className={`card flex items-start gap-4 ${analysis.anomaly_type !== "none" ? "border-yellow-200" : ""}`}>
                     <div className="mt-0.5 p-2 rounded-lg" style={{ background: `${cfg.color}20` }}>
                         <Icon size={20} style={{ color: cfg.color }} />
                     </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-white">{cfg.label}</span>
+                            <span className="font-semibold text-gray-900">{cfg.label}</span>
                             {analysis.drop_percentage && (
                                 <span className={`badge ${cfg.badge}`}>
                                     ▼ {analysis.drop_percentage}% drop
@@ -93,9 +93,9 @@ export default function ReachPage() {
                         <p className="text-gray-400 text-sm leading-relaxed">{analysis.reasoning}</p>
                         {analysis.baseline_reach && (
                             <div className="flex gap-6 mt-3 text-xs text-gray-500">
-                                <span>Baseline: <strong className="text-gray-300">{analysis.baseline_reach.toLocaleString()}</strong></span>
-                                <span>Current: <strong className="text-gray-300">{analysis.current_reach?.toLocaleString()}</strong></span>
-                                <span>Confidence: <strong className="text-gray-300">{(analysis.confidence * 100).toFixed(0)}%</strong></span>
+                                <span>Baseline: <strong className="text-gray-900">{analysis.baseline_reach.toLocaleString()}</strong></span>
+                                <span>Current: <strong className="text-gray-900">{analysis.current_reach?.toLocaleString()}</strong></span>
+                                <span>Confidence: <strong className="text-gray-900">{(analysis.confidence * 100).toFixed(0)}%</strong></span>
                             </div>
                         )}
                     </div>
@@ -104,16 +104,16 @@ export default function ReachPage() {
 
             {/* Reach Chart */}
             <div className="card">
-                <h2 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">Reach Trend (last {snapshots.length} points)</h2>
+                <h2 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider">Reach Trend (last {snapshots.length} points)</h2>
                 {chartData.length >= 2 ? (
                     <ResponsiveContainer width="100%" height={220}>
                         <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
                             <XAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 11 }} />
                             <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} />
                             <Tooltip
-                                contentStyle={{ background: "#1e1e32", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8 }}
-                                labelStyle={{ color: "#fff" }}
+                                contentStyle={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8 }}
+                                labelStyle={{ color: "#111827" }}
                             />
                             {baseline && <ReferenceLine y={baseline} stroke="#6366f1" strokeDasharray="4 4" label={{ value: "Baseline", fill: "#6366f1", fontSize: 11 }} />}
                             <Line type="monotone" dataKey="reach" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} />
@@ -128,19 +128,19 @@ export default function ReachPage() {
 
             {/* Input Form */}
             <div className="card">
-                <h2 className="font-semibold text-white mb-3 text-sm uppercase tracking-wider">Simulate Reach Data</h2>
+                <h2 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Simulate Reach Data</h2>
                 <form className="flex gap-3 items-end" onSubmit={handleIngest}>
                     <div className="flex-1">
                         <label className="text-xs text-gray-500 mb-1 block">Reach *</label>
                         <input type="number" placeholder="e.g. 12000" value={form.reach}
                             onChange={e => setForm(f => ({ ...f, reach: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                            className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
                     </div>
                     <div className="flex-1">
                         <label className="text-xs text-gray-500 mb-1 block">Impressions</label>
                         <input type="number" placeholder="e.g. 50000" value={form.impressions}
                             onChange={e => setForm(f => ({ ...f, impressions: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                            className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
                     </div>
                     <button type="submit"
                         className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all">

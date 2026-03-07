@@ -66,7 +66,7 @@ export default function PricingPage() {
     return (
         <div className="p-8 max-w-4xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <DollarSign size={22} className="text-green-400" /> Brand Deal Pricing
                 </h1>
                 <p className="text-gray-500 text-sm mt-0.5">Get a data-backed fair rate for any brand deal</p>
@@ -76,7 +76,7 @@ export default function PricingPage() {
             <div className="flex gap-1 p-1 rounded-lg w-fit" style={{ background: "var(--surface-3)" }}>
                 {(["estimate", "history"] as const).map(t => (
                     <button key={t} onClick={() => { setTab(t); if (t === "history") loadHistory(); }}
-                        className={`px-4 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${tab === t ? "bg-indigo-500 text-white" : "text-gray-400 hover:text-white"
+                        className={`px-4 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${tab === t ? "bg-white text-indigo-700 shadow-sm" : "text-gray-600 hover:text-gray-900"
                             }`}>
                         {t === "estimate" ? "Get Estimate" : "History"}
                     </button>
@@ -87,7 +87,7 @@ export default function PricingPage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Auto-Pricing Panel */}
                     <div className="card space-y-4 self-start">
-                        <h2 className="font-semibold text-white text-sm uppercase tracking-wider">AI Pricing Engine</h2>
+                        <h2 className="font-semibold text-gray-900 text-sm uppercase tracking-wider">AI Pricing Engine</h2>
                         <p className="text-sm text-gray-400 leading-relaxed">
                             We automatically analyze your synced Instagram profile, follower demographics, and recent Reel engagement to instantly calculate your optimum market rate.
                         </p>
@@ -109,20 +109,20 @@ export default function PricingPage() {
                                     <div className="flex items-end gap-3 mb-2">
                                         <div className="text-center">
                                             <div className="text-xs text-gray-500 mb-1">Min</div>
-                                            <div className="text-2xl font-bold text-white">${result.suggested_price_min?.toFixed(0)}</div>
+                                            <div className="text-2xl font-bold text-gray-900">${result.suggested_price_min?.toFixed(0)}</div>
                                         </div>
                                         <div className="text-gray-600 text-xl mb-1">–</div>
                                         <div className="text-center">
                                             <div className="text-xs text-gray-500 mb-1">Max</div>
-                                            <div className="text-2xl font-bold text-white">${result.suggested_price_max?.toFixed(0)}</div>
+                                            <div className="text-2xl font-bold text-gray-900">${result.suggested_price_max?.toFixed(0)}</div>
                                         </div>
                                         <div className="ml-auto text-center">
                                             <div className="text-xs text-gray-500 mb-1">Recommended</div>
-                                            <div className="text-2xl font-bold text-green-400">${result.recommended_price?.toFixed(0)}</div>
+                                            <div className="text-2xl font-bold text-green-600">${result.recommended_price?.toFixed(0)}</div>
                                         </div>
                                     </div>
                                     <div className="text-xs text-gray-500 mt-2">
-                                        Confidence: <strong className="text-gray-300">{(result.confidence * 100).toFixed(0)}%</strong>
+                                        Confidence: <strong className="text-gray-900">{(result.confidence * 100).toFixed(0)}%</strong>
                                     </div>
                                 </div>
 
@@ -140,7 +140,7 @@ export default function PricingPage() {
                                 {/* Reasoning */}
                                 <div className="card">
                                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Claude's Analysis</p>
-                                    <p className="text-gray-300 text-sm leading-relaxed">{result.reasoning}</p>
+                                    <p className="text-gray-800 text-sm leading-relaxed">{result.reasoning}</p>
                                 </div>
                             </>
                         ) : (
@@ -159,15 +159,15 @@ export default function PricingPage() {
                         <div key={i} className="card flex items-center gap-6">
                             <div>
                                 <div className="text-xs text-gray-500 capitalize">{h.platform} · {h.deliverable_type}</div>
-                                <div className="font-semibold text-white">{h.niche}</div>
+                                <div className="font-semibold text-gray-900">{h.niche}</div>
                             </div>
                             <div className="ml-auto text-right">
                                 <div className="text-xs text-gray-500">Range</div>
-                                <div className="text-white font-semibold">${h.suggested_price_min?.toFixed(0)}–${h.suggested_price_max?.toFixed(0)}</div>
+                                <div className="text-gray-900 font-semibold">${h.suggested_price_min?.toFixed(0)}–${h.suggested_price_max?.toFixed(0)}</div>
                             </div>
                             <div className="text-right">
                                 <div className="text-xs text-gray-500">Recommended</div>
-                                <div className="text-green-400 font-bold">${h.recommended_price?.toFixed(0)}</div>
+                                <div className="text-green-600 font-bold">${h.recommended_price?.toFixed(0)}</div>
                             </div>
                         </div>
                     ))}

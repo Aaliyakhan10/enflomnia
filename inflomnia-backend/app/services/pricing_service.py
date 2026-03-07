@@ -12,7 +12,7 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.integrations.opensearch_client import OpenSearchClient
 from app.integrations.s3_client import S3Client
 from app.models.brand import BrandDeal
@@ -53,7 +53,7 @@ NICHE_PREMIUM = {
 class PricingService:
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
         self.opensearch = OpenSearchClient()
         self.s3 = S3Client()
 
@@ -190,9 +190,8 @@ class PricingService:
         self, platform, deliverable_type, follower_count, engagement_rate,
         niche, min_p, max_p, rec_p, offered_price
     ) -> str:
-        try:
-            offer_text = f"\nBrand's offer: ${offered_price:.0f}" if offered_price else ""
-            prompt = f"""A creator wants to price a brand deal. Give a 2-sentence explanation of the fair rate.
+        offer_text = f"\nBrand's offer: ${offered_price:.0f}" if offered_price else ""
+        prompt = f"""A creator wants to price a brand deal. Give a 2-sentence explanation of the fair rate.
 
 Creator profile:
 - Platform: {platform}
@@ -205,11 +204,5 @@ Calculated price range: ${min_p:.0f}–${max_p:.0f} (recommended ${rec_p:.0f}){o
 
 Return ONLY the explanation. Be warm, confident, and data-focused."""
 
-            system = "You are a creator economy pricing expert. Keep responses concise, friendly, and actionable."
-            return self.bedrock.invoke_claude(prompt, system=system, max_tokens=120)
-        except Exception:
-            return (
-                f"Based on your {follower_count:,} followers with {engagement_rate:.1%} engagement on {platform}, "
-                f"the fair market range for a {deliverable_type} in the {niche} space is "
-                f"${min_p:.0f}–${max_p:.0f}. Your recommended rate is ${rec_p:.0f}."
-            )
+        system = "You are a creator economy pricing expert. Keep responses concise, friendly, and actionable."
+        return self.bedrock.invoke_model(prompt, system=system, max_tokens=120)

@@ -11,9 +11,14 @@ class Settings(BaseSettings):
     aws_region: str = "us-east-1"
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
+    aws_session_token: str | None = None
+
+    # Google Gemini
+    gemini_api_key: str = ""
+    gemini_model_id: str = "gemini-2.5-flash"
 
     # Amazon Bedrock
-    bedrock_model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    bedrock_model_id: str = "us.amazon.nova-2-lite-v1:0"
     bedrock_guardrail_id: str = ""
     bedrock_guardrail_version: str = "DRAFT"
 

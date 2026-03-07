@@ -62,7 +62,7 @@ export default function WorkloadPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Zap size={22} className="text-indigo-400" /> Workload Signals
                     </h1>
                     <p className="text-gray-500 text-sm mt-0.5">AI-powered engagement pattern analysis & schedule advice</p>
@@ -83,7 +83,7 @@ export default function WorkloadPage() {
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-3 mb-1">
-                                <h2 className="text-lg font-bold text-white">{cfg.label}</h2>
+                                <h2 className="text-lg font-bold text-gray-900">{cfg.label}</h2>
                                 <span className="badge" style={{ background: cfg.bg, color: cfg.color }}>
                                     {signal.recommended_posts_per_week}x / week
                                 </span>
@@ -106,7 +106,7 @@ export default function WorkloadPage() {
 
             {/* Engagement Heatmap */}
             <div className="card">
-                <h2 className="font-semibold text-white mb-4 text-sm uppercase tracking-wider">
+                <h2 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider">
                     30-Day Engagement Heatmap <span className="text-gray-500 font-normal normal-case">(darker = higher engagement)</span>
                 </h2>
                 {heatmap ? (

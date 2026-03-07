@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.models.reach_snapshot import ReachSnapshot
 from app.models.reel import Reel
 from app.models.creator import Creator
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.integrations.opensearch_client import OpenSearchClient
 from app.integrations.s3_client import S3Client
 
@@ -22,7 +22,7 @@ class ReachAnomalyService:
     PLATFORM_WIDE_RATIO = 0.30     # 30%+ of similar creators = platform issue
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
         self.opensearch = OpenSearchClient()
         self.s3 = S3Client()
 
@@ -183,8 +183,7 @@ class ReachAnomalyService:
         similar_affected: int,
     ) -> str:
         """Ask Claude 3.5 to generate a friendly, creator-facing explanation."""
-        try:
-            prompt = f"""A creator's reach changed significantly. Analyse and explain in 2 sentences, friendly tone.
+        prompt = f"""A creator's reach changed significantly. Analyse and explain in 2 sentences, friendly tone.
 
 Data:
 - Reach drop: {drop_pct:.1%}
@@ -194,9 +193,5 @@ Data:
 
 Return ONLY the explanation, no preamble."""
 
-            system = "You are a supportive creator analytics advisor. Keep responses short, warm, and actionable."
-            return self.bedrock.invoke_claude(prompt, system=system, max_tokens=150)
-        except Exception:
-            if anomaly_type == "platform_wide":
-                return f"Your reach dropped {drop_pct:.0%}, but similar creators are also affected — this appears to be a platform-wide issue, not something you caused."
-            return f"Your reach dropped {drop_pct:.0%} compared to your 7-day average. This seems creator-specific — reviewing your recent content and hashtag strategy may help."
+        system = "You are a supportive creator analytics advisor. Keep responses short, warm, and actionable."
+        return self.bedrock.invoke_model(prompt, system=system, max_tokens=150)

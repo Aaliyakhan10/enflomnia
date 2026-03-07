@@ -13,7 +13,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.models.brand import Brand
 from app.models.brand_match import BrandMatch
 
@@ -37,7 +37,7 @@ NICHE_INDUSTRY_MAP = {
 class MatchingService:
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
 
     # ── Public API ──────────────────────────────────────────────────────────
 
@@ -218,19 +218,12 @@ class MatchingService:
         self, creator_niche, platform, follower_count, engagement_rate,
         brand_name, brand_industry, target_audience, relevance_score
     ) -> str:
-        try:
-            prompt = f"""Explain in 2 sentences why this creator–brand match makes sense (or doesn't).
+        prompt = f"""Explain in 2 sentences why this creator–brand match makes sense (or doesn't).
 
 Creator: {creator_niche} creator on {platform}, {follower_count:,} followers, {engagement_rate:.1%} ER
 Brand: {brand_name} ({brand_industry}), targets: {target_audience or 'not specified'}
 Match score: {relevance_score:.0%}
 
 Be friendly, specific, and data-driven. Return ONLY the 2-sentence explanation."""
-            system = "You are a creator-brand partnership specialist."
-            return self.bedrock.invoke_claude(prompt, system=system, max_tokens=100)
-        except Exception:
-            return (
-                f"{brand_name} operates in the {brand_industry} space which aligns "
-                f"with your {creator_niche} content and audience. "
-                f"With a {relevance_score:.0%} relevance score, this could be a strong partnership."
-            )
+        system = "You are a creator-brand partnership specialist."
+        return self.bedrock.invoke_model(prompt, system=system, max_tokens=100)

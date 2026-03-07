@@ -13,11 +13,11 @@ async function apiFetch(path: string, opts?: RequestInit) {
 
 function StatPill({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string | number; color: string }) {
     return (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ background: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.05)" }}>
             <Icon size={13} style={{ color }} />
             <div>
                 <div className="text-[10px] text-gray-500">{label}</div>
-                <div className="text-xs font-semibold text-white">{value ?? "—"}</div>
+                <div className="text-xs font-semibold text-gray-900">{value ?? "—"}</div>
             </div>
         </div>
     );
@@ -114,7 +114,7 @@ export default function InstagramPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Instagram size={22} className="text-pink-400" /> Instagram Reels
                     </h1>
                     <p className="text-gray-500 text-sm mt-0.5">Connect your account to analyze reel performance with Claude 3.5</p>
@@ -122,17 +122,17 @@ export default function InstagramPage() {
                 {account && (
                     <div className="flex gap-2">
                         <button onClick={handleSync} disabled={syncing}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/[0.06] text-gray-300 text-sm hover:bg-white/[0.10] transition-all">
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
                             <RefreshCw size={13} className={syncing ? "animate-spin" : ""} />
                             {syncing ? "Syncing…" : "Sync Reels"}
                         </button>
                         <button onClick={handleAnalyze} disabled={analyzing || reels.length === 0}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-500/20 text-pink-300 text-sm hover:bg-pink-500/30 transition-all disabled:opacity-50">
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-pink-50 text-pink-700 text-sm hover:bg-pink-100 transition-all disabled:opacity-50">
                             {analyzing ? <Loader size={13} className="animate-spin" /> : <Zap size={13} />}
                             {analyzing ? "Analyzing…" : "Analyze with Claude"}
                         </button>
                         <button onClick={handleDisconnect} disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500/10 text-red-400 text-sm hover:bg-red-500/20 transition-all ml-4 border border-red-500/20">
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-600 text-sm hover:bg-red-100 transition-all ml-4 border border-red-200">
                             Disconnect
                         </button>
                     </div>
@@ -150,16 +150,16 @@ export default function InstagramPage() {
                         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center mx-auto mb-3">
                             <Instagram size={28} className="text-white" />
                         </div>
-                        <h2 className="text-lg font-bold text-white">Connect Instagram</h2>
+                        <h2 className="text-lg font-bold text-gray-900">Connect Instagram</h2>
                         <p className="text-gray-500 text-sm mt-1">Paste your access token to start analyzing your reels</p>
                     </div>
 
-                    <div className="rounded-lg p-4 space-y-3 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                    <div className="rounded-lg p-4 space-y-3 text-center" style={{ background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.15)" }}>
                         <p className="text-sm font-semibold text-indigo-300">How to connect safely:</p>
                         <p className="text-xs text-gray-400">Provide an Instagram Graph API User Token. You can generate one via the Meta App Explorer.</p>
                         <button onClick={(e) => handleConnect(e, true)} disabled={loading}
                             type="button"
-                            className="text-xs text-white bg-white/10 hover:bg-white/20 py-1.5 px-3 rounded mt-2 transition-colors border border-white/10">
+                            className="text-xs text-gray-700 bg-white hover:bg-gray-50 py-1.5 px-3 rounded mt-2 transition-colors border border-gray-200">
                             Just want to look around? Try Demo Mode
                         </button>
                     </div>
@@ -169,7 +169,7 @@ export default function InstagramPage() {
                             <label className="text-xs text-gray-500 mb-1 block">Access Token</label>
                             <textarea rows={2} value={token} onChange={e => setToken(e.target.value)}
                                 placeholder="EAABwzLixnjYBO..."
-                                className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-xs font-mono focus:outline-none focus:border-pink-500 resize-none" />
+                                className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-xs font-mono focus:outline-none focus:border-pink-500 resize-none" />
                         </div>
                         <button type="submit" disabled={loading || !token}
                             className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 text-white text-sm font-bold shadow-lg shadow-pink-500/20 hover:opacity-90 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:hover:scale-100">
@@ -190,27 +190,27 @@ export default function InstagramPage() {
                             </div>
                         )}
                         <div>
-                            <p className="font-bold text-white">@{account.username || "unknown"}</p>
+                            <p className="font-bold text-gray-900">@{account.username || "unknown"}</p>
                             <p className="text-xs text-gray-500">{account.name}</p>
                         </div>
                         <div className="ml-auto flex gap-6 text-center">
                             <div>
-                                <div className="text-lg font-bold text-white">{account.followers_count?.toLocaleString() ?? "—"}</div>
+                                <div className="text-lg font-bold text-gray-900">{account.followers_count?.toLocaleString() ?? "—"}</div>
                                 <div className="text-[10px] text-gray-500">Followers</div>
                             </div>
                             <div>
-                                <div className="text-lg font-bold text-white">{reels.length}</div>
+                                <div className="text-lg font-bold text-gray-900">{reels.length}</div>
                                 <div className="text-[10px] text-gray-500">Reels synced</div>
                             </div>
                         </div>
-                        <span className="px-2 py-1 rounded text-[10px] font-semibold bg-green-500/20 text-green-400">Connected ✓</span>
+                        <span className="px-2 py-1 rounded text-[10px] font-semibold bg-green-50 text-green-700">Connected ✓</span>
                     </div>
 
                     {/* Claude analysis banner */}
                     {analysis && (
                         <div className="card space-y-3" style={{ borderColor: "rgba(236,72,153,0.3)" }}>
-                            <h3 className="font-bold text-white text-sm flex items-center gap-2"><Zap size={14} className="text-pink-400" /> Claude's Analysis</h3>
-                            <p className="text-gray-300 text-sm leading-relaxed">{analysis.overall_insights}</p>
+                            <h3 className="font-bold text-gray-900 text-sm flex items-center gap-2"><Zap size={14} className="text-pink-400" /> Claude's Analysis</h3>
+                            <p className="text-gray-700 text-sm leading-relaxed">{analysis.overall_insights}</p>
                             {analysis.top_performing && (
                                 <div className="text-xs text-gray-500">
                                     <span className="text-yellow-400 font-semibold">🏆 Top pattern: </span>{analysis.top_performing}
@@ -236,7 +236,7 @@ export default function InstagramPage() {
                                 {reels.length} Reels
                             </h3>
                             {reels.map((reel: any) => (
-                                <div key={reel.ig_media_id} className="card hover:border-white/15 transition-all">
+                                <div key={reel.ig_media_id} className="card hover:border-gray-200 transition-all">
                                     <div className="flex gap-4">
                                         {/* Thumbnail */}
                                         {reel.thumbnail_url ? (
@@ -244,7 +244,7 @@ export default function InstagramPage() {
                                                 className="w-20 h-28 object-cover rounded-lg flex-shrink-0" />
                                         ) : (
                                             <div className="w-20 h-28 rounded-lg flex-shrink-0 flex items-center justify-center"
-                                                style={{ background: "rgba(236,72,153,0.1)", border: "1px solid rgba(236,72,153,0.2)" }}>
+                                                style={{ background: "rgba(236,72,153,0.05)", border: "1px solid rgba(236,72,153,0.15)" }}>
                                                 <Play size={20} className="text-pink-400" />
                                             </div>
                                         )}
@@ -252,7 +252,7 @@ export default function InstagramPage() {
                                         <div className="flex-1 min-w-0 space-y-2">
                                             {/* Caption */}
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className="text-gray-300 text-xs leading-relaxed line-clamp-2">
+                                                <p className="text-gray-800 text-xs leading-relaxed line-clamp-2">
                                                     {reel.caption || <span className="text-gray-600 italic">No caption</span>}
                                                 </p>
                                                 <div className="flex items-center gap-2 flex-shrink-0">

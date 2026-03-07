@@ -9,7 +9,7 @@ const NICHES = ["fitness", "beauty", "tech", "gaming", "food", "travel", "fashio
 
 function ScoreBar({ value, color }: { value: number; color: string }) {
     return (
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${value * 100}%`, background: color }} />
         </div>
     );
@@ -93,13 +93,13 @@ export default function MatchingPage() {
         <div className="p-8 max-w-5xl mx-auto space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Users size={22} className="text-indigo-400" /> Brand Matching
                     </h1>
                     <p className="text-gray-500 text-sm mt-0.5">Find brands that fit your audience, niche, and content style</p>
                 </div>
                 <button onClick={() => setShowAddBrand(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 text-sm font-medium hover:bg-indigo-500/30 transition-all">
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition-all">
                     <Plus size={14} /> Add Brand
                 </button>
             </div>
@@ -111,7 +111,7 @@ export default function MatchingPage() {
                         <button onClick={() => setShowAddBrand(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
                             <X size={16} />
                         </button>
-                        <h2 className="font-bold text-white">Add Brand to Catalogue</h2>
+                        <h2 className="font-bold text-gray-900">Add Brand to Catalogue</h2>
                         <form onSubmit={handleAddBrand} className="space-y-3">
                             {[
                                 { label: "Brand Name *", key: "name", placeholder: "Nike" },
@@ -122,13 +122,13 @@ export default function MatchingPage() {
                                     <label className="text-xs text-gray-500 mb-1 block">{label}</label>
                                     <input type="text" placeholder={placeholder} value={(brandForm as any)[key]}
                                         onChange={e => bu(key, e.target.value)} required={key === "name"}
-                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
                                 </div>
                             ))}
                             <div>
                                 <label className="text-xs text-gray-500 mb-1 block">Industry</label>
                                 <select value={brandForm.industry} onChange={e => bu("industry", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                    className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500">
                                     {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                                 </select>
                             </div>
@@ -136,12 +136,12 @@ export default function MatchingPage() {
                                 <div>
                                     <label className="text-xs text-gray-500 mb-1 block">Budget Min $</label>
                                     <input type="number" value={brandForm.budget_range_min} onChange={e => bu("budget_range_min", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
                                 </div>
                                 <div>
                                     <label className="text-xs text-gray-500 mb-1 block">Budget Max $</label>
                                     <input type="number" value={brandForm.budget_range_max} onChange={e => bu("budget_range_max", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white/[0.05] border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500" />
+                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
                                 </div>
                             </div>
                             <button type="submit" className="w-full py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all">
@@ -155,7 +155,7 @@ export default function MatchingPage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
                 {/* Creator Profile Sidebar */}
                 <div className="card space-y-4 md:col-span-1 self-start">
-                    <h2 className="font-semibold text-white text-xs uppercase tracking-wider">AI Profile Engine</h2>
+                    <h2 className="font-semibold text-gray-900 text-xs uppercase tracking-wider">AI Profile Engine</h2>
                     <p className="text-[10px] text-gray-400 leading-relaxed">
                         Inflomnia automatically synthesizes your connected Instagram account's follower demographics, engagement rate, and niche analysis to find the best brand matches.
                     </p>
@@ -185,11 +185,11 @@ export default function MatchingPage() {
                     <div key={m.id} className="card space-y-3">
                         <div className="flex items-start justify-between">
                             <div>
-                                <h3 className="font-bold text-white">{m.brand_name}</h3>
+                                <h3 className="font-bold text-gray-900">{m.brand_name}</h3>
                                 <span className="text-xs text-gray-500 capitalize">{m.brand_industry}</span>
                             </div>
                             <div className="text-right">
-                                <div className="text-2xl font-bold text-indigo-300">{(m.relevance_score * 100).toFixed(0)}%</div>
+                                <div className="text-2xl font-bold text-indigo-600">{(m.relevance_score * 100).toFixed(0)}%</div>
                                 <div className="text-[10px] text-gray-500">match</div>
                             </div>
                         </div>
@@ -198,14 +198,14 @@ export default function MatchingPage() {
                             <div>
                                 <div className="flex justify-between mb-1">
                                     <span>Niche fit</span>
-                                    <span className="text-white">{(m.niche_match * 100).toFixed(0)}%</span>
+                                    <span className="text-gray-900">{(m.niche_match * 100).toFixed(0)}%</span>
                                 </div>
                                 <ScoreBar value={m.niche_match || 0} color="#6366f1" />
                             </div>
                             <div>
                                 <div className="flex justify-between mb-1">
                                     <span>Audience overlap</span>
-                                    <span className="text-white">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
+                                    <span className="text-gray-900">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
                                 </div>
                                 <ScoreBar value={m.audience_overlap || 0} color="#22c55e" />
                             </div>
@@ -215,7 +215,7 @@ export default function MatchingPage() {
 
                         {(m.budget_range_min || m.budget_range_max) && (
                             <p className="text-xs text-gray-600">
-                                Budget: <strong className="text-gray-400">
+                                Budget: <strong className="text-gray-800">
                                     ${m.budget_range_min?.toFixed(0) || "?"} – ${m.budget_range_max?.toFixed(0) || "?"}
                                 </strong>
                             </p>

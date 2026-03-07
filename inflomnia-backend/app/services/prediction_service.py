@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 
 from sqlalchemy.orm import Session
 
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.models.reel import Reel
 from app.models.instagram_account import InstagramAccount
 
@@ -17,7 +17,7 @@ from app.models.instagram_account import InstagramAccount
 class PredictionService:
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
 
     # ── 1. Content Suggestions ──────────────────────────────────────────────
 
@@ -58,15 +58,7 @@ Return ONLY valid JSON with no markdown formatting. The format must be a list of
     "hook_idea": "A 1-sentence opening hook (max 15 words) using a strong psychological trigger."
   }}
 ]"""
-        try:
-            res = self.bedrock.invoke_claude(prompt, max_tokens=800)
-            return self._parse_json(res)
-        except Exception:
-            return [
-                {"title": "Day in the Life Recap", "format": "VLOG", "rationale": "Audiences love authentic BTS content.", "hook_idea": "Come with me on a typical chaotic Tuesday."},
-                {"title": "Debunking a Myth", "format": "Talking Head", "rationale": "High interaction driven by controversial or surprising info.", "hook_idea": "Everything you knew about this is wrong."},
-                {"title": "Quick Hack", "format": "Tutorial", "rationale": "High save-rate potential.", "hook_idea": "Save this for the next time you need to do X."}
-            ]
+        return self.bedrock.invoke_model_json(prompt)
 
     # ── 2. Reel Feedback ────────────────────────────────────────────────────
 
@@ -92,15 +84,7 @@ Return ONLY valid JSON:
   "what_to_improve": "1 sentence on a specific weakness (e.g., low watch time indicates a weak hook or slow pacing)",
   "next_iteration": "1 highly specific, actionable editing or scripting idea to test in the next video to fix the weakness"
 }}"""
-        try:
-            res = self.bedrock.invoke_claude(prompt, max_tokens=300)
-            return self._parse_json(res)
-        except Exception:
-            return {
-                "what_worked": "Good amount of saves relative to likes, showing the content was valuable.",
-                "what_to_improve": "Watch time is slightly below optimal for this reach.",
-                "next_iteration": "Try a faster-paced edit in the first 3 seconds to hook viewers longer."
-            }
+        return self.bedrock.invoke_model_json(prompt)
 
     # ── 3. Competitors & Trends ─────────────────────────────────────────────
 
@@ -127,17 +111,7 @@ Return ONLY valid JSON:
     {{"trend_name": "Trend 2", "description": "Actionable explanation of how to execute this trend right now."}}
   ]
 }}"""
-        try:
-            res = self.bedrock.invoke_claude(prompt, max_tokens=500)
-            return self._parse_json(res)
-        except Exception:
-            return {
-                "competitors_to_watch": ["@similar_creator1", "@similar_creator2"],
-                "emerging_trends": [
-                    {"trend_name": "Lo-Fi Storytelling", "description": "Unedited, highly authentic talking head videos."},
-                    {"trend_name": "Micro-education Series", "description": "Breaking down 1 complex topic across 5 short parts."}
-                ]
-            }
+        return self.bedrock.invoke_model_json(prompt)
 
     # ── 4. Growth Simulation ────────────────────────────────────────────────
 
@@ -167,29 +141,11 @@ Return ONLY valid JSON:
   ],
   "strategic_pivot": "2-sentence strategic recommendation, detailing a multi-stage approach."
 }}"""
-        try:
-            res = self.bedrock.invoke_claude(prompt, max_tokens=400)
-            parsed = self._parse_json(res)
-            # Ensure numbers make sense
-            if not parsed.get("projections"):
-                raise ValueError
-            return parsed
-        except Exception:
-            return {
-                "projections": [
-                    {"month": 3, "projected_followers": int(current_followers * 1.15)},
-                    {"month": 6, "projected_followers": int(current_followers * 1.4)},
-                    {"month": 12, "projected_followers": int(current_followers * 1.9)}
-                ],
-                "strategic_pivot": "Transition top-performing reel formats into longer serialized storytelling to drive higher follower retention and deeper community engagement."
-            }
+        parsed = self.bedrock.invoke_model_json(prompt)
+        # Ensure numbers make sense
+        if not parsed.get("projections"):
+            raise ValueError("No projections returned by model")
+        return parsed
 
     # ── Helpers ─────────────────────────────────────────────────────────────
 
-    def _parse_json(self, response: str) -> Any:
-        clean = response.strip()
-        if clean.startswith("```"):
-            clean = clean.split("```")[1]
-            if clean.startswith("json"):
-                clean = clean[4:]
-        return json.loads(clean.strip())

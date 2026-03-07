@@ -6,7 +6,7 @@ from app.database import get_db
 from app.schemas.comment import CommentBatchIn, CommentOut, FeedbackIn, CommentSummaryOut
 from app.services.comment_shield import CommentShieldService
 from app.integrations.instagram_client import InstagramClient
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.models.instagram_account import InstagramAccount
 import json
 
@@ -37,16 +37,10 @@ def sync_reel_comments(creator_id: str, ig_media_id: str, db: Session = Depends(
 
     if account.access_token == "mock_token_123" or not account.access_token:
         # Generate mock comments for the UI using Bedrock
-        bedrock = BedrockClient()
+        bedrock = GeminiClient()
         prompt = f"Generate 15 short Instagram comments for a reel (media ID: {ig_media_id}). Include a mix of supportive comments, 2 spam/bot comments, and 1 slightly toxic/negative comment. Return ONLY a JSON array of objects with keys 'text' (the comment) and 'username' (a fake handle)."
         try:
-            raw_res = bedrock.invoke_claude(prompt, max_tokens=1000)
-            clean = raw_res.strip()
-            if clean.startswith("```"):
-                clean = clean.split("```")[1]
-                if clean.startswith("json"):
-                    clean = clean[4:]
-            raw_comments = json.loads(clean)
+            raw_comments = bedrock.invoke_model_json(prompt)
         except Exception:
             raw_comments = [
                 {"text": "Love this so much! 🔥", "username": "fan_123"},

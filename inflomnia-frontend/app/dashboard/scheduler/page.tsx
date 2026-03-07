@@ -58,7 +58,7 @@ export default function SchedulerPage() {
         <div className="p-8 max-w-5xl mx-auto space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <CalendarIcon size={22} className="text-emerald-400" /> Content Scheduler
                     </h1>
                     <p className="text-gray-500 text-sm mt-0.5">Automated planning based on workload signals and intelligence predictions.</p>
@@ -74,11 +74,11 @@ export default function SchedulerPage() {
             </div>
 
             {schedule.length === 0 && !loading ? (
-                <div className="card text-center py-20 border-emerald-500/20 bg-emerald-500/5">
+                <div className="card text-center py-20 border-emerald-200 bg-emerald-50">
                     <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
                         <CalendarIcon size={32} className="text-emerald-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-2">No Content Scheduled</h3>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">No Content Scheduled</h3>
                     <p className="text-gray-400 text-sm max-w-md mx-auto mb-6">
                         Let Claude analyse your recent engagement heatmap and predict the absolute best times and formats for your next 7 days.
                     </p>
@@ -99,13 +99,13 @@ export default function SchedulerPage() {
 
                         return (
                             <div key={item.id} className="card flex flex-col hover:border-emerald-500/30 transition-all group">
-                                <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-3">
+                                <div className="flex items-center justify-between mb-3 border-b border-gray-100 pb-3">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isRun ? "bg-red-500/10 text-red-400" : "bg-emerald-500/10 text-emerald-400"}`}>
                                             {isRun ? <AlertCircle size={14} /> : <Clock size={14} />}
                                         </div>
                                         <div>
-                                            <div className="text-sm font-bold text-white">{format(date, "EEEE")}</div>
+                                            <div className="text-sm font-bold text-gray-900">{format(date, "EEEE")}</div>
                                             <div className="text-[10px] text-gray-500">{format(date, "MMM d, h:mm a")}</div>
                                         </div>
                                     </div>
@@ -119,20 +119,20 @@ export default function SchedulerPage() {
                                 </div>
 
                                 <div className="flex-1">
-                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white/5 text-gray-300 border border-white/10 mb-2 inline-block">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gray-50 text-gray-600 border border-gray-200 mb-2 inline-block">
                                         {item.content_type}
                                     </span>
-                                    <h3 className="text-sm font-bold text-white mb-2 line-clamp-2">{item.topic || "Untitled Post"}</h3>
+                                    <h3 className="text-sm font-bold text-gray-900 mb-2 line-clamp-2">{item.topic || "Untitled Post"}</h3>
                                     {item.caption && (
-                                        <div className="text-xs text-gray-400 whitespace-pre-wrap line-clamp-4 bg-black/20 p-2 rounded-md border border-white/5">
+                                        <div className="text-xs text-gray-600 whitespace-pre-wrap line-clamp-4 bg-gray-50 p-2 rounded-md border border-gray-200">
                                             {item.caption}
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
                                     <span className={`text-[10px] uppercase font-bold tracking-wider ${item.status === 'suggested' ? 'text-emerald-400' :
-                                            item.status === 'published' ? 'text-gray-500' : 'text-yellow-400'
+                                        item.status === 'published' ? 'text-gray-500' : 'text-yellow-400'
                                         }`}>
                                         • {item.status}
                                     </span>

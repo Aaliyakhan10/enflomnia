@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.models.comment import Comment
 from app.integrations.guardrails_client import GuardrailsClient
 from app.integrations.bedrock_agent_client import BedrockAgentClient
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.integrations.s3_client import S3Client
 
 
@@ -24,7 +24,7 @@ class CommentShieldService:
     def __init__(self):
         self.guardrails = GuardrailsClient()
         self.agent = BedrockAgentClient()
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
         self.s3 = S3Client()
 
     # ------------------------------------------------------------------ #
@@ -200,8 +200,7 @@ class CommentShieldService:
 
     def _claude_classify(self, content: str) -> dict:
         """Use Claude 3.5 to classify spam/safe/high-value and score engagement."""
-        try:
-            prompt = f"""Classify this comment. Return JSON only with keys: category (spam|safe|high-value), confidence (0-1), engagement_score (0-1).
+        prompt = f"""Classify this comment. Return JSON only with keys: category (spam|safe|high-value), confidence (0-1), engagement_score (0-1).
 
 Comment: "{content}"
 
@@ -211,6 +210,4 @@ Rules:
 - safe: normal, neutral comment
 
 JSON only, no explanation."""
-            return self.bedrock.invoke_claude_json(prompt)
-        except Exception:
-            return {"category": "safe", "confidence": 0.5, "engagement_score": 0.3}
+        return self.bedrock.invoke_model_json(prompt)

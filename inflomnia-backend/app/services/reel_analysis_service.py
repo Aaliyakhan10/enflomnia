@@ -13,7 +13,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.integrations.instagram_client import InstagramClient
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.models.instagram_account import InstagramAccount
 from app.models.reel import Reel
 from app.services.mock_data_service import seed_mock_instagram_data
@@ -22,7 +22,7 @@ from app.services.mock_data_service import seed_mock_instagram_data
 class ReelAnalysisService:
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
 
     # ── Connect ─────────────────────────────────────────────────────────────
 
@@ -169,21 +169,7 @@ Return a JSON object with EXACTLY these keys:
 
 Be highly specific, data-driven, and actionable. Avoid generic advice like 'make engaging content'. Return ONLY valid JSON."""
 
-        try:
-            raw = self.bedrock.invoke_claude(prompt, system="You are a social media analytics expert.", max_tokens=600)
-            clean = raw.strip()
-            if clean.startswith("```"):
-                clean = clean.split("```")[1]
-                if clean.startswith("json"):
-                    clean = clean[4:]
-            result = json.loads(clean)
-        except Exception:
-            result = {
-                "overall_insights": f"Your top reels average {sum(r.like_count or 0 for r in top_reels) // max(len(top_reels),1)} likes. Focus on strong opening hooks to drive completion rate.",
-                "top_performing_pattern": "Reels with direct captions and clear value propositions perform best.",
-                "recommended_posting_style": "Start with a hook in the first 2 seconds, keep reels under 30s, end with a question CTA.",
-                "reel_scores": [{"index": i, "hook_quality": 6.0, "analysis": "Metrics show average engagement."} for i in range(len(top_reels))],
-            }
+        result = self.bedrock.invoke_model_json(prompt, system="You are a social media analytics expert.")
 
         # Persist scores back to DB
         scores = result.get("reel_scores", [])

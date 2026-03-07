@@ -25,7 +25,7 @@ const intelligenceNav = [
 function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {
     const active = pathname === href;
     return (
-        <Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active ? "bg-fuchsia-500/20 text-fuchsia-300" : "text-gray-400 hover:text-white hover:bg-white/[0.05]"
+        <Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active ? "bg-fuchsia-600/10 text-fuchsia-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             }`}>
             <Icon size={15} />
             {label}
@@ -39,17 +39,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
         <div className="flex min-h-screen">
             {/* Sidebar */}
-            <aside className="w-60 flex-shrink-0 border-r border-white/[0.06] flex flex-col"
+            <aside className="w-60 flex-shrink-0 border-r border-gray-200 flex flex-col"
                 style={{ background: "var(--surface-2)" }}>
 
                 {/* Logo */}
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06]">
+                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
                         <Shield size={16} className="text-white" />
                     </div>
                     <div>
-                        <span className="font-bold text-sm text-white tracking-wide">Inflomnia</span>
-                        <p className="text-[10px] text-fuchsia-400 font-medium">Creator Hub</p>
+                        <span className="font-bold text-sm text-gray-900 tracking-wide">Inflomnia</span>
+                        <p className="text-[10px] text-fuchsia-600 font-medium">Creator Hub</p>
                     </div>
                 </div>
 
@@ -92,13 +92,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </nav>
 
                 {/* Footer */}
-                <div className="p-3 border-t border-white/[0.06]">
+                <div className="p-3 border-t border-gray-200">
                     <div className="rounded-lg p-3 flex items-center gap-3"
                         style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}>
                         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
                         <div>
-                            <p className="text-[11px] font-semibold text-white">Claude 3.5 Sonnet</p>
-                            <p className="text-[10px] text-emerald-400/80">AI Engine Active</p>
+                            <p className="text-[11px] font-semibold text-gray-900">Claude 3.5 Sonnet</p>
+                            <p className="text-[10px] text-emerald-600">AI Engine Active</p>
                         </div>
                     </div>
                 </div>

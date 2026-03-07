@@ -70,7 +70,7 @@ export default function IntelligencePage() {
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-8">
             <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <Lightbulb size={22} className="text-yellow-400" /> Content Intelligence
                 </h1>
                 <p className="text-gray-500 text-sm mt-0.5">Proactive Claude 3.5 insights, growth simulation, and reel coaching.</p>
@@ -86,15 +86,15 @@ export default function IntelligencePage() {
 
                     <div className="grid grid-cols-3 gap-3">
                         {growth?.projections?.map((p: any) => (
-                            <div key={p.month} className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-center">
+                            <div key={p.month} className="p-3 rounded-xl bg-white border border-gray-100 text-center">
                                 <div className="text-xs text-gray-500 mb-1">Month {p.month}</div>
-                                <div className="font-bold text-white text-lg">{p.projected_followers?.toLocaleString()}</div>
+                                <div className="font-bold text-gray-900 text-lg">{p.projected_followers?.toLocaleString()}</div>
                                 <div className="text-[10px] text-sky-400 mt-1">Followers</div>
                             </div>
                         ))}
                     </div>
 
-                    <div className="p-3 rounded-lg bg-sky-500/10 border border-sky-500/20">
+                    <div className="p-3 rounded-lg bg-sky-50 border border-sky-100">
                         <p className="text-xs text-sky-200 font-medium leading-relaxed">
                             <span className="font-bold text-sky-400">Strategic Pivot: </span>
                             {growth?.strategic_pivot}
@@ -115,7 +115,7 @@ export default function IntelligencePage() {
                                 <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
                                     <ChevronRight size={14} className="text-purple-400 mt-1 flex-shrink-0" />
                                     <div>
-                                        <span className="font-bold text-white block">{t.trend_name}</span>
+                                        <span className="font-bold text-gray-900 block">{t.trend_name}</span>
                                         <span className="text-xs text-gray-400">{t.description}</span>
                                     </div>
                                 </li>
@@ -123,11 +123,11 @@ export default function IntelligencePage() {
                         </ul>
                     </div>
 
-                    <div className="pt-3 border-t border-white/10">
+                    <div className="pt-3 border-t border-gray-100">
                         <h3 className="text-xs text-gray-500 mb-2">Similar Creators Outperforming Baseline</h3>
                         <div className="flex gap-2">
                             {trends?.competitors_to_watch?.map((c: string, i: number) => (
-                                <span key={i} className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-md text-xs font-mono text-purple-300">
+                                <span key={i} className="px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-md text-xs font-mono text-purple-700">
                                     {c}
                                 </span>
                             ))}
@@ -144,12 +144,12 @@ export default function IntelligencePage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {suggestions?.map((s: any, i: number) => (
-                            <div key={i} className="p-4 rounded-xl bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 relative overflow-hidden group">
+                            <div key={i} className="p-4 rounded-xl bg-white border border-gray-200 relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1 h-full bg-yellow-500 opacity-50"></div>
                                 <span className="text-[10px] font-bold text-yellow-500 tracking-wider uppercase mb-1 block">{s.format}</span>
-                                <h3 className="font-bold text-white text-sm mb-2">{s.title}</h3>
-                                <p className="text-xs text-gray-300 italic mb-3">"{s.hook_idea}"</p>
-                                <p className="text-[11px] text-gray-500 border-t border-white/10 pt-2">{s.rationale}</p>
+                                <h3 className="font-bold text-gray-900 text-sm mb-2">{s.title}</h3>
+                                <p className="text-xs text-gray-600 italic mb-3">"{s.hook_idea}"</p>
+                                <p className="text-[11px] text-gray-500 border-t border-gray-100 pt-2">{s.rationale}</p>
                             </div>
                         ))}
                     </div>
@@ -157,7 +157,7 @@ export default function IntelligencePage() {
 
                 {/* Micro Feedback (Reel Selection) */}
                 <div className="card md:col-span-2 space-y-4">
-                    <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
                         <Play size={16} className="text-pink-400" /> Reel Coaching
                     </h2>
                     <p className="text-xs text-gray-400">Select a reel below to generate specific feedback analyzing its ratio of reach, watch-time, and saves.</p>
@@ -167,16 +167,16 @@ export default function IntelligencePage() {
                             <button
                                 key={r.id}
                                 onClick={() => handleSelectReel(r.id)}
-                                className={`flex-shrink-0 w-32 rounded-xl border text-left transition-all overflow-hidden ${selectedReel === r.id ? "border-pink-500 ring-2 ring-pink-500/20" : "border-white/10 hover:border-white/30"}`}
+                                className={`flex-shrink-0 w-32 rounded-xl border text-left transition-all overflow-hidden ${selectedReel === r.id ? "border-pink-500 ring-2 ring-pink-200" : "border-gray-200 hover:border-gray-300"}`}
                             >
                                 {r.thumbnail_url ? (
                                     <img src={r.thumbnail_url} alt="thumbnail" className="w-full h-24 object-cover" />
                                 ) : (
-                                    <div className="w-full h-24 bg-white/5 flex items-center justify-center">
+                                    <div className="w-full h-24 bg-gray-100 flex items-center justify-center">
                                         <Play size={20} className="text-gray-600" />
                                     </div>
                                 )}
-                                <div className="p-2 text-[10px] text-gray-400 truncate bg-zinc-900 border-t border-white/10">
+                                <div className="p-2 text-[10px] text-gray-500 truncate bg-gray-50 border-t border-gray-200">
                                     {r.caption || "No caption"}
                                 </div>
                             </button>
@@ -184,7 +184,7 @@ export default function IntelligencePage() {
                     </div>
 
                     {selectedReel && (
-                        <div className="mt-4 p-5 rounded-xl border border-pink-500/30 bg-pink-500/5">
+                        <div className="mt-4 p-5 rounded-xl border border-pink-200 bg-pink-50">
                             {feedbackLoading ? (
                                 <div className="flex items-center gap-2 text-pink-400 text-sm">
                                     <Loader className="animate-spin" size={16} /> Analyzing reel metrics...
@@ -195,21 +195,21 @@ export default function IntelligencePage() {
                                         <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
                                         <div>
                                             <p className="text-xs font-bold text-green-400 uppercase tracking-wider mb-0.5">What Worked</p>
-                                            <p className="text-sm text-gray-200">{feedback.what_worked}</p>
+                                            <p className="text-sm text-gray-800">{feedback.what_worked}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
                                         <TrendingUp size={16} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                                         <div>
                                             <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-0.5">What to Improve</p>
-                                            <p className="text-sm text-gray-200">{feedback.what_to_improve}</p>
+                                            <p className="text-sm text-gray-800">{feedback.what_to_improve}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
                                         <Lightbulb size={16} className="text-sky-400 mt-0.5 flex-shrink-0" />
                                         <div>
                                             <p className="text-xs font-bold text-sky-400 uppercase tracking-wider mb-0.5">Next Iteration</p>
-                                            <p className="text-sm text-gray-200">{feedback.next_iteration}</p>
+                                            <p className="text-sm text-gray-800">{feedback.next_iteration}</p>
                                         </div>
                                     </div>
                                 </div>

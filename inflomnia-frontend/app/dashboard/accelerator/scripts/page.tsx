@@ -14,7 +14,7 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 2000);
     }
     return (
-        <button onClick={copy} className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/[0.08] transition-all">
+        <button onClick={copy} className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all">
             {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
         </button>
     );
@@ -55,7 +55,7 @@ export default function ScriptsPage() {
     return (
         <div className="p-8 max-w-5xl mx-auto space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                     <FileText size={22} className="text-yellow-400" /> Script Generator
                 </h1>
                 <p className="text-gray-500 text-sm mt-0.5">Claude 3.5 creates a full branded content script with hook, structure & CTA</p>
@@ -64,7 +64,7 @@ export default function ScriptsPage() {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
                 {/* Auto-Generation Panel */}
                 <div className="card space-y-4 md:col-span-2 self-start">
-                    <h2 className="font-semibold text-white text-sm uppercase tracking-wider">AI Content Brief</h2>
+                    <h2 className="font-semibold text-gray-900 text-sm uppercase tracking-wider">AI Content Brief</h2>
                     <p className="text-sm text-gray-400 leading-relaxed">
                         Inflomnia will automatically analyze your latest Instagram Reels and profile niche to generate a highly-engaging script in your unique voice.
                     </p>
@@ -86,7 +86,7 @@ export default function ScriptsPage() {
                                     <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider">🪝 Hook</p>
                                     <CopyButton text={result.hook} />
                                 </div>
-                                <p className="text-white text-base leading-relaxed font-medium">"{result.hook}"</p>
+                                <p className="text-gray-900 text-base leading-relaxed font-medium">"{result.hook}"</p>
                             </div>
 
                             {/* Script Sections */}
@@ -98,12 +98,12 @@ export default function ScriptsPage() {
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs font-bold text-indigo-400 uppercase">{s.section}</span>
                                                 {s.duration_seconds && (
-                                                    <span className="text-[10px] text-gray-600 bg-white/[0.04] px-1.5 rounded">{s.duration_seconds}s</span>
+                                                    <span className="text-[10px] text-gray-600 bg-gray-100 px-1.5 rounded">{s.duration_seconds}s</span>
                                                 )}
                                             </div>
                                             <CopyButton text={s.content} />
                                         </div>
-                                        <p className="text-gray-300 text-sm leading-relaxed">{s.content}</p>
+                                        <p className="text-gray-800 text-sm leading-relaxed">{s.content}</p>
                                         {s.tips && <p className="text-gray-600 text-xs mt-1 italic">💡 {s.tips}</p>}
                                     </div>
                                 ))}
@@ -115,7 +115,7 @@ export default function ScriptsPage() {
                                     <p className="text-xs font-bold text-green-400 uppercase tracking-wider">📣 CTA</p>
                                     <CopyButton text={result.cta} />
                                 </div>
-                                <p className="text-white text-sm">{result.cta}</p>
+                                <p className="text-gray-900 text-sm">{result.cta}</p>
                             </div>
 
                             {/* Tips */}
@@ -124,7 +124,7 @@ export default function ScriptsPage() {
                                     <p className="text-xs text-gray-500 uppercase tracking-wider mb-2 font-bold">Delivery Tips</p>
                                     <ul className="space-y-1.5">
                                         {result.tips.map((tip: string, i: number) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                                            <li key={i} className="flex items-start gap-2 text-sm text-gray-800">
                                                 <ChevronRight size={14} className="text-yellow-400 mt-0.5 flex-shrink-0" />
                                                 {tip}
                                             </li>

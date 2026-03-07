@@ -61,7 +61,7 @@ export default function ShieldPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Shield size={22} className="text-indigo-400" /> Comment Shield
                     </h1>
                     <p className="text-gray-500 text-sm mt-0.5">AI-powered toxic, spam & bot filtering</p>
@@ -93,7 +93,7 @@ export default function ShieldPage() {
             <div className="flex gap-1 p-1 rounded-lg" style={{ background: "var(--surface-3)" }}>
                 {TABS.map(t => (
                     <button key={t} onClick={() => setTab(t)}
-                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${tab === t ? "bg-indigo-500 text-white" : "text-gray-400 hover:text-white"
+                        className={`flex-1 py-1.5 rounded-md text-xs font-semibold capitalize transition-all ${tab === t ? "bg-indigo-100 text-indigo-700" : "text-gray-600 hover:text-gray-900"
                             }`}>
                         {t}
                     </button>
@@ -120,7 +120,7 @@ export default function ShieldPage() {
 
                             {/* Content */}
                             <div className="flex-1 min-w-0">
-                                <p className="text-white text-sm leading-relaxed">{c.content}</p>
+                                <p className="text-gray-900 text-sm leading-relaxed">{c.content}</p>
                                 <div className="flex gap-4 mt-1.5 text-xs text-gray-500">
                                     <span>@{c.author}</span>
                                     <span>Confidence: {(c.confidence * 100).toFixed(0)}%</span>

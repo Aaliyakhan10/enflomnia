@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models.reel import Reel
 from app.models.workload_signal import WorkloadSignal
-from app.integrations.bedrock_client import BedrockClient
+from app.integrations.gemini_client import GeminiClient
 from app.integrations.s3_client import S3Client
 
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -20,7 +20,7 @@ DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sun
 class WorkloadSignalService:
 
     def __init__(self):
-        self.bedrock = BedrockClient()
+        self.bedrock = GeminiClient()
         self.s3 = S3Client()
 
     # ------------------------------------------------------------------ #
@@ -148,8 +148,7 @@ class WorkloadSignalService:
 
     def _generate_claude_signal(self, pattern_summary: dict) -> dict:
         """Ask Claude 3.5 to generate the workload signal recommendation."""
-        try:
-            prompt = f"""Analyse this creator's engagement patterns and recommend a posting strategy to maximize reach while preventing creator burnout.
+        prompt = f"""Analyse this creator's engagement patterns and recommend a posting strategy to maximize reach while preventing creator burnout.
 
 Pattern data:
 - Top engagement days: {pattern_summary['top_days']}
@@ -165,15 +164,4 @@ Return ONLY valid JSON with these exact keys:
   "reasoning": "<2-3 sentences, friendly, actionable. Explicitly state WHY these days/cadence are recommended based on the supplied data.>"
 }}"""
 
-            return self.bedrock.invoke_claude_json(prompt)
-        except Exception:
-            # Fallback: rule-based
-            top_days = pattern_summary.get("top_days", ["Monday", "Wednesday", "Friday"])
-            hint = pattern_summary.get("signal_hint", "maintain")
-            posts = {"reduce": 2, "maintain": 4, "increase": 6}.get(hint, 4)
-            return {
-                "signal_type": hint,
-                "recommended_posts_per_week": posts,
-                "best_days": top_days,
-                "reasoning": f"Based on your engagement data, posting {posts}x/week on your top days will optimise reach. Focus on {', '.join(top_days[:2])} for best results.",
-            }
+        return self.bedrock.invoke_model_json(prompt)
