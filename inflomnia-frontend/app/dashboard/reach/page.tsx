@@ -1,17 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
-import { AlertTriangle, TrendingDown, CheckCircle, Plus, RefreshCw } from "lucide-react";
+import { BarChart2, AlertTriangle, CheckCircle, TrendingDown, Plus, RefreshCw } from "lucide-react";
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { reachApi } from "@/lib/api";
 
-const CREATOR_ID = "demo-creator-001"; // hard-coded for Phase 1 demo
+const CREATOR_ID = "demo-creator-001";
 
-const ANOMALY_CONFIG = {
-    none: { color: "#22c55e", label: "Normal", icon: CheckCircle, badge: "badge-safe" },
-    creator_specific: { color: "#f59e0b", label: "Creator-Specific Drop", icon: AlertTriangle, badge: "badge-toxic" },
-    platform_wide: { color: "#ef4444", label: "Platform-Wide Issue", icon: TrendingDown, badge: "badge-spam" },
+const STATUS_MAP = {
+    none: { color: "#059669", bg: "#d1fae5", label: "Your reach looks healthy 🎉", icon: CheckCircle },
+    creator_specific: { color: "#d97706", bg: "#fef3c7", label: "Your reach dropped — something might be off", icon: AlertTriangle },
+    platform_wide: { color: "#dc2626", bg: "#fee2e2", label: "Platform-wide drop — not just you", icon: TrendingDown },
 };
 
 export default function ReachPage() {
@@ -29,8 +30,7 @@ export default function ReachPage() {
                 reachApi.getSnapshots(CREATOR_ID),
                 reachApi.analyze(CREATOR_ID),
             ]);
-            const snaps = snapRes.data.slice().reverse(); // oldest first for chart
-            setSnapshots(snaps);
+            setSnapshots(snapRes.data.slice().reverse());
             setAnalysis(analyzeRes.data);
         } catch { }
         setLoading(false);
@@ -50,104 +50,112 @@ export default function ReachPage() {
         } catch { }
     }
 
-    const cfg = ANOMALY_CONFIG[analysis?.anomaly_type as keyof typeof ANOMALY_CONFIG] || ANOMALY_CONFIG.none;
-    const Icon = cfg.icon;
+    const status = STATUS_MAP[analysis?.anomaly_type as keyof typeof STATUS_MAP] || STATUS_MAP.none;
+    const Icon = status.icon;
+    const chartData = snapshots.map((s, i) => ({ name: `Day ${snapshots.length - i}`, reach: s.reach }));
 
-    const chartData = snapshots.map((s, i) => ({
-        name: `D-${snapshots.length - 1 - i}`,
-        reach: s.reach,
-    }));
-
-    const baseline = analysis?.baseline_reach;
+    const CustomTooltip = ({ active, payload, label }: any) => {
+        if (active && payload?.length) {
+            return (
+                <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-lg text-sm">
+                    <p className="text-gray-400 text-xs mb-1">{label}</p>
+                    <p className="font-bold text-gray-900">{payload[0].value?.toLocaleString()} reach</p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-6">
+        <div className="p-8 max-w-4xl mx-auto space-y-6">
+
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Reach Health</h1>
-                    <p className="text-gray-500 text-sm mt-0.5">Detects creator-specific vs platform-wide drops</p>
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
+                        <BarChart2 size={22} style={{ color: "#7c3aed" }} />
+                        Reach Health
+                    </h1>
+                    <p className="text-sm text-gray-500">
+                        Inflomnia tracks your reach daily and alerts you the moment something looks off.
+                    </p>
                 </div>
-                <button onClick={fetchData} disabled={loading}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 text-sm font-medium hover:bg-indigo-500/30 transition-all">
-                    <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-                    Refresh
+                <button onClick={fetchData} disabled={loading} className="btn btn-outline gap-2">
+                    <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
                 </button>
             </div>
 
-            {/* Anomaly Alert */}
+            {/* Status card */}
             {analysis && (
-                <div className={`card flex items-start gap-4 ${analysis.anomaly_type !== "none" ? "border-yellow-200" : ""}`}>
-                    <div className="mt-0.5 p-2 rounded-lg" style={{ background: `${cfg.color}20` }}>
-                        <Icon size={20} style={{ color: cfg.color }} />
+                <div className="card flex items-start gap-4" style={{ borderColor: status.color + "30" }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: status.bg }}>
+                        <Icon size={18} style={{ color: status.color }} />
                     </div>
                     <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-gray-900">{cfg.label}</span>
-                            {analysis.drop_percentage && (
-                                <span className={`badge ${cfg.badge}`}>
-                                    ▼ {analysis.drop_percentage}% drop
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-gray-400 text-sm leading-relaxed">{analysis.reasoning}</p>
+                        <p className="font-semibold text-gray-900 mb-1">{status.label}</p>
+                        <p className="text-sm text-gray-500 leading-relaxed">{analysis.reasoning}</p>
                         {analysis.baseline_reach && (
-                            <div className="flex gap-6 mt-3 text-xs text-gray-500">
-                                <span>Baseline: <strong className="text-gray-900">{analysis.baseline_reach.toLocaleString()}</strong></span>
-                                <span>Current: <strong className="text-gray-900">{analysis.current_reach?.toLocaleString()}</strong></span>
-                                <span>Confidence: <strong className="text-gray-900">{(analysis.confidence * 100).toFixed(0)}%</strong></span>
+                            <div className="flex gap-5 mt-3 text-xs">
+                                <span className="text-gray-400">Baseline  <strong className="text-gray-700">{analysis.baseline_reach.toLocaleString()}</strong></span>
+                                <span className="text-gray-400">Current   <strong className="text-gray-700">{analysis.current_reach?.toLocaleString()}</strong></span>
+                                {analysis.drop_percentage && (
+                                    <span className="text-gray-400">Drop  <strong style={{ color: status.color }}>▼ {analysis.drop_percentage}%</strong></span>
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
             )}
 
-            {/* Reach Chart */}
+            {/* Chart */}
             <div className="card">
-                <h2 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wider">Reach Trend (last {snapshots.length} points)</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Your Reach Over Time</h2>
                 {chartData.length >= 2 ? (
                     <ResponsiveContainer width="100%" height={220}>
                         <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
-                            <XAxis dataKey="name" tick={{ fill: "#6B7280", fontSize: 11 }} />
-                            <YAxis tick={{ fill: "#6B7280", fontSize: 11 }} />
-                            <Tooltip
-                                contentStyle={{ background: "#ffffff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 8 }}
-                                labelStyle={{ color: "#111827" }}
-                            />
-                            {baseline && <ReferenceLine y={baseline} stroke="#6366f1" strokeDasharray="4 4" label={{ value: "Baseline", fill: "#6366f1", fontSize: 11 }} />}
-                            <Line type="monotone" dataKey="reach" stroke="#6366f1" strokeWidth={2} dot={{ fill: "#6366f1", r: 4 }} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                            <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} />
+                            <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
+                            <Tooltip content={<CustomTooltip />} />
+                            {analysis?.baseline_reach && (
+                                <ReferenceLine y={analysis.baseline_reach} stroke="#7c3aed"
+                                    strokeDasharray="5 5"
+                                    label={{ value: "baseline", fill: "#7c3aed", fontSize: 10 }} />
+                            )}
+                            <Line type="monotone" dataKey="reach" stroke="#7c3aed" strokeWidth={2.5}
+                                dot={{ fill: "#7c3aed", r: 4, strokeWidth: 0 }}
+                                activeDot={{ r: 6, fill: "#7c3aed", stroke: "#ede9fe", strokeWidth: 3 }} />
                         </LineChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-[220px] flex items-center justify-center text-gray-500 text-sm">
-                        Add at least 2 snapshots to see the chart
+                    <div className="h-[220px] flex flex-col items-center justify-center gap-2 text-gray-400">
+                        <BarChart2 size={28} className="text-gray-200" />
+                        <p className="text-sm">Add at least 2 data points to see your chart</p>
                     </div>
                 )}
             </div>
 
-            {/* Input Form */}
+            {/* Simulate form */}
             <div className="card">
-                <h2 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wider">Simulate Reach Data</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-4">Add a Reach Snapshot</h2>
                 <form className="flex gap-3 items-end" onSubmit={handleIngest}>
                     <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1 block">Reach *</label>
-                        <input type="number" placeholder="e.g. 12000" value={form.reach}
-                            onChange={e => setForm(f => ({ ...f, reach: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
+                        <label className="text-xs text-gray-500 mb-1.5 block font-medium">Reach *</label>
+                        <input type="number" placeholder="e.g. 12,000" value={form.reach}
+                            onChange={e => setForm(f => ({ ...f, reach: e.target.value }))} />
                     </div>
                     <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1 block">Impressions</label>
-                        <input type="number" placeholder="e.g. 50000" value={form.impressions}
-                            onChange={e => setForm(f => ({ ...f, impressions: e.target.value }))}
-                            className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
+                        <label className="text-xs text-gray-500 mb-1.5 block font-medium">Impressions</label>
+                        <input type="number" placeholder="e.g. 50,000" value={form.impressions}
+                            onChange={e => setForm(f => ({ ...f, impressions: e.target.value }))} />
                     </div>
-                    <button type="submit"
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all">
-                        <Plus size={14} /> Add Snapshot
+                    <button type="submit" className="btn btn-brand" style={{ flexShrink: 0 }}>
+                        <Plus size={14} /> Add
                     </button>
                 </form>
             </div>
+
         </div>
     );
 }

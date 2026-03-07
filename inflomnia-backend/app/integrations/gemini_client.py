@@ -84,17 +84,39 @@ class GeminiClient:
                 config=config,
             )
             raw = response.text
-            
-            # Clean up the output if the model still wrapped it in markdown
+
+            # ── Step 1: Strip markdown code fences if present ─────────────────
             raw = raw.strip()
-            
-            # Find the first { and the last }
-            start_idx = raw.find('{')
-            end_idx = raw.rfind('}')
-            
-            if start_idx != -1 and end_idx != -1 and end_idx >= start_idx:
-                raw = raw[start_idx:end_idx+1]
-            
+            if raw.startswith("```"):
+                raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+                raw = re.sub(r"\n?```$", "", raw)
+                raw = raw.strip()
+
+            # ── Step 2: Extract outermost [ ... ] or { ... } ──────────────────
+            # Find the earliest occurrence of either array or object opener
+            bracket_idx = raw.find('[')
+            brace_idx   = raw.find('{')
+
+            if bracket_idx == -1 and brace_idx == -1:
+                raise json.JSONDecodeError("No JSON structure found", raw, 0)
+
+            if bracket_idx != -1 and (brace_idx == -1 or bracket_idx < brace_idx):
+                # Response is a JSON array
+                end_idx = raw.rfind(']')
+                if end_idx == -1:
+                    raise json.JSONDecodeError("No closing ] found", raw, 0)
+                raw = raw[bracket_idx:end_idx + 1]
+            else:
+                # Response is a JSON object
+                end_idx = raw.rfind('}')
+                if end_idx == -1:
+                    raise json.JSONDecodeError("No closing } found", raw, 0)
+                raw = raw[brace_idx:end_idx + 1]
+
+            # ── Step 3: Strip trailing commas (Gemini loves adding them) ──────
+            # e.g.  "key": "value",  }   →   "key": "value"  }
+            raw = re.sub(r",\s*([\]}])", r"\1", raw)
+
             return json.loads(raw)
         except json.JSONDecodeError as e:
             print(f"[ERROR] JSON Decode Error on response: {raw if 'raw' in locals() else 'N/A'}")

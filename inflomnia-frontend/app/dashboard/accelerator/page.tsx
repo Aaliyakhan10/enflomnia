@@ -1,69 +1,94 @@
 "use client";
 import Link from "next/link";
-import { DollarSign, FileText, Users, ArrowRight, Rocket } from "lucide-react";
+import {
+    BadgeDollarSign, ScrollText, PersonStanding, Sparkles,
+    ArrowRight, Rocket, Target, Zap, ChevronRight
+} from "lucide-react";
 
-const features = [
+const tools = [
     {
         href: "/dashboard/accelerator/pricing",
-        icon: DollarSign,
-        color: "#22c55e",
-        bg: "rgba(34,197,94,0.1)",
-        title: "Brand Deal Pricing",
-        desc: "Get a data-backed fair price range for any brand deal — based on your platform, niche, engagement rate, and follower count.",
-        tag: "Monetization",
+        label: "Deal Pricing",
+        icon: BadgeDollarSign,
+        color: "#10b981",
+        bg: "#d1fae5",
+        desc: "Know your worth. Inflomnia AI analyzes your engagement, niche, and brand budget to suggest the perfect rate.",
     },
     {
         href: "/dashboard/accelerator/scripts",
-        icon: FileText,
-        color: "#f59e0b",
-        bg: "rgba(245,158,11,0.1)",
-        title: "Script Generator",
-        desc: "Claude 3.5 creates a full branded content script with hook, structured sections, CTA, and delivery tips.",
-        tag: "Content Creation",
+        label: "Script Writer",
+        icon: ScrollText,
+        color: "#7c3aed",
+        bg: "#ede9fe",
+        desc: "Inflomnia AI creates a full branded content script with hook, structured sections, CTA, and delivery tips.",
     },
     {
         href: "/dashboard/accelerator/matching",
-        icon: Users,
-        color: "#6366f1",
-        bg: "rgba(99,102,241,0.1)",
-        title: "Brand Matching",
-        desc: "Finds brands that fit your audience and content style — scored by niche relevance, audience overlap, and budget fit.",
-        tag: "Partnerships",
+        label: "Brand Matching",
+        icon: PersonStanding,
+        color: "#f59e0b",
+        bg: "#fef3c7",
+        desc: "Find your ideal brand partners. We match your audience demographics with thousands of sponsor profiles.",
     },
 ];
 
-export default function AcceleratorHome() {
+export default function AcceleratorOverview() {
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-8">
-            {/* Hero */}
-            <div className="text-center py-8">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 mb-4">
-                    <Rocket size={12} /> Monetization Hub
+        <div className="p-8 max-w-6xl mx-auto space-y-12 tracking-tight">
+            {/* Hero Section */}
+            <div className="text-center space-y-4 py-8">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border border-violet-100"
+                    style={{ background: "#f5f3ff", color: "#7c3aed" }}>
+                    <Rocket size={12} /> The Monetization Suite
                 </div>
-                <h1 className="text-4xl font-bold text-white mb-3">Monetization Tools</h1>
-                <p className="text-gray-400 text-lg max-w-xl mx-auto leading-relaxed">
-                    Fair pricing, better scripts, and the right brand partners — all powered by Claude 3.5 Sonnet
+                <h1 className="text-5xl font-black text-gray-900 tracking-tighter leading-tight">
+                    Scale your creator business.
+                </h1>
+                <p className="text-gray-500 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
+                    Fair pricing, better scripts, and the right brand partners — all powered by <span className="text-violet-600 font-bold">Inflomnia AI</span>.
                 </p>
             </div>
 
-            {/* Feature Cards */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {features.map(({ href, icon: Icon, color, bg, title, desc, tag }) => (
-                    <Link key={href} href={href}
-                        className="card group hover:border-white/20 transition-all hover:-translate-y-0.5 cursor-pointer block">
-                        <div className="flex items-start justify-between mb-4">
-                            <div className="p-2.5 rounded-xl" style={{ background: bg }}>
-                                <Icon size={20} style={{ color }} />
+            {/* Tools Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {tools.map((tool) => (
+                    <Link key={tool.href} href={tool.href} className="group flex flex-col h-full">
+                        <div className="card h-full flex flex-col p-8 group-hover:shadow-2xl group-hover:translate-y-[-4px] transition-all duration-300 border-gray-100 relative overflow-hidden">
+                            {/* Abstract bg element */}
+                            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-gray-50 rounded-full group-hover:bg-violet-50 transition-colors duration-500" />
+
+                            <div className="relative z-10 space-y-6 flex-1">
+                                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm border border-gray-50 group-hover:scale-110 transition-transform duration-300"
+                                    style={{ background: tool.bg, color: tool.color }}>
+                                    <tool.icon size={28} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 mb-3 tracking-tight">{tool.label}</h2>
+                                    <p className="text-sm text-gray-500 leading-relaxed font-normal">{tool.desc}</p>
+                                </div>
                             </div>
-                            <span className="text-[10px] text-gray-500 font-medium">{tag}</span>
-                        </div>
-                        <h3 className="font-bold text-white mb-1.5 text-base">{title}</h3>
-                        <p className="text-gray-500 text-xs leading-relaxed mb-4">{desc}</p>
-                        <div className="flex items-center gap-1 text-xs font-semibold" style={{ color }}>
-                            Open Panel <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+
+                            <div className="relative z-10 mt-8 pt-6 border-t border-gray-50 flex items-center justify-between text-violet-600">
+                                <span className="text-xs font-black uppercase tracking-widest">Open Tool</span>
+                                <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                            </div>
                         </div>
                     </Link>
                 ))}
+            </div>
+
+            {/* Bottom Insight */}
+            <div className="card bg-violet-600 text-white p-8 flex flex-col md:flex-row items-center gap-8 shadow-xl shadow-violet-500/20">
+                <div className="w-16 h-16 rounded-2xl bg-white/10 flex items-center justify-center border border-white/20 flex-shrink-0 animate-pulse">
+                    <Sparkles size={32} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-black tracking-tight mb-2">Ready to pitch?</h3>
+                    <p className="text-violet-100 font-medium">Use the Script Writer with a specific brand name to get a personalized pitch deck draft along with your content script.</p>
+                </div>
+                <Link href="/dashboard/accelerator/scripts" className="btn bg-white text-violet-600 border-0 px-8 py-3 text-sm font-black hover:bg-violet-50 transition-all rounded-xl ml-auto">
+                    Start Writing
+                </Link>
             </div>
         </div>
     );

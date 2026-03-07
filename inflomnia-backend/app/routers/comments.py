@@ -8,10 +8,92 @@ from app.services.comment_shield import CommentShieldService
 from app.integrations.instagram_client import InstagramClient
 from app.integrations.gemini_client import GeminiClient
 from app.models.instagram_account import InstagramAccount
+from app.models.reel import Reel
 import json
 
 router = APIRouter(prefix="/api/v1/comments", tags=["Comment Shield"])
 service = CommentShieldService()
+
+
+@router.post("/sync/{creator_id}", response_model=List[CommentOut], summary="Auto-sync & analyze comments from all recent reels")
+def sync_comments_from_instagram(
+    creator_id: str,
+    reels_limit: int = 5,
+    comments_per_reel: int = 10,
+    db: Session = Depends(get_db),
+):
+    """
+    Automatically fetches comments from the creator's recent reels using
+    their stored Instagram access token. No manual data entry required.
+    Pipes every comment through the Comment Shield (bot/spam/toxic detection).
+    """
+    account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+    if not account or not account.access_token:
+        raise HTTPException(status_code=400, detail="No Instagram account connected. Connect an account first.")
+
+    # Get the creator's recent reels from DB
+    reels = (
+        db.query(Reel)
+        .filter(Reel.creator_id == creator_id)
+        .order_by(Reel.published_at.desc())
+        .limit(reels_limit)
+        .all()
+    )
+
+    if not reels:
+        raise HTTPException(status_code=404, detail="No reels found. Sync reels first via POST /api/v1/instagram/sync/{creator_id}.")
+
+    all_results = []
+
+    is_mock = account.access_token.startswith("mock") or account.access_token == "mock_token_123"
+
+    for reel in reels:
+        ig_media_id = reel.ig_media_id
+
+        if is_mock:
+            # Generate realistic mock comments via Gemini
+            gemini = GeminiClient()
+            prompt = (
+                f"Generate 8 short Instagram comments for a reel (caption snippet: '{(reel.caption or '')[:80]}...'). "
+                f"Include a mix: 5 genuine comments, 2 spam/bot comments, 1 slightly toxic comment. "
+                f"Return ONLY a JSON array of objects with keys 'text' and 'username'."
+            )
+            try:
+                raw_comments = gemini.invoke_model_json(prompt)
+                if isinstance(raw_comments, dict):
+                    raw_comments = list(raw_comments.values())[0] if raw_comments else []
+            except Exception:
+                raw_comments = [
+                    {"text": "Love this! 🔥", "username": "fan_001"},
+                    {"text": "Check my profile for collabs 💰", "username": "promo_bot"},
+                    {"text": "This content is trash.", "username": "hater_99"},
+                ]
+        else:
+            try:
+                client = InstagramClient(account.access_token)
+                raw_comments = client.get_media_comments(ig_media_id, limit=comments_per_reel)
+                client.close()
+            except Exception as e:
+                raw_comments = []  # Skip this reel on error
+
+        if not raw_comments:
+            continue
+
+        comments_input = []
+        for rc in raw_comments:
+            if isinstance(rc, dict):
+                comments_input.append({
+                    "content": rc.get("text", rc.get("content", "")),
+                    "author": rc.get("username", rc.get("author", "unknown")),
+                    "platform": "instagram",
+                    "ig_media_id": ig_media_id,
+                })
+
+        if comments_input:
+            results = service.analyze_batch(db, creator_id, comments_input)
+            all_results.extend(results)
+
+    return all_results
 
 
 @router.post("/analyze", response_model=List[CommentOut], summary="Classify a batch of comments")
@@ -35,12 +117,14 @@ def sync_reel_comments(creator_id: str, ig_media_id: str, db: Session = Depends(
     if not account or not account.access_token:
         raise HTTPException(status_code=400, detail="Instagram account not connected")
 
-    if account.access_token == "mock_token_123" or not account.access_token:
-        # Generate mock comments for the UI using Bedrock
+    if account.access_token == "mock_token_123" or account.access_token.startswith("mock"):
+        # Generate mock comments for the UI using Gemini
         bedrock = GeminiClient()
         prompt = f"Generate 15 short Instagram comments for a reel (media ID: {ig_media_id}). Include a mix of supportive comments, 2 spam/bot comments, and 1 slightly toxic/negative comment. Return ONLY a JSON array of objects with keys 'text' (the comment) and 'username' (a fake handle)."
         try:
             raw_comments = bedrock.invoke_model_json(prompt)
+            if isinstance(raw_comments, dict):
+                raw_comments = list(raw_comments.values())[0] if raw_comments else []
         except Exception:
             raw_comments = [
                 {"text": "Love this so much! 🔥", "username": "fan_123"},
@@ -67,7 +151,7 @@ def sync_reel_comments(creator_id: str, ig_media_id: str, db: Session = Depends(
             "platform": "instagram",
             "ig_media_id": ig_media_id
         })
-    
+
     # Process through Comment Shield (Bedrock)
     results = service.analyze_batch(db, creator_id, comments_input)
     return results
@@ -108,3 +192,4 @@ def submit_feedback(payload: FeedbackIn, db: Session = Depends(get_db)):
 def get_summary(creator_id: str, db: Session = Depends(get_db)):
     """Returns counts: total | spam | toxic | bot | high-value | safe."""
     return service.get_summary(db, creator_id)
+

@@ -7,8 +7,24 @@ const api = axios.create({
 
 // ── Instagram ─────────────────────────────────────────────────────────────
 export const instagramApi = {
+    connect: (creatorId: string, accessToken: string) =>
+        api.post("/api/v1/instagram/connect", { creator_id: creatorId, access_token: accessToken }),
+
+    getAccount: (creatorId: string) =>
+        api.get(`/api/v1/instagram/account/${creatorId}`),
+
+    disconnect: (creatorId: string) =>
+        api.post(`/api/v1/instagram/disconnect/${creatorId}`),
+
+    /** Sync reels AND auto-derives reach snapshots + refreshes workload signal */
+    syncReels: (creatorId: string, limit = 20) =>
+        api.post(`/api/v1/instagram/sync/${creatorId}?limit=${limit}`),
+
     getReels: (creatorId: string) =>
         api.get(`/api/v1/instagram/reels/${creatorId}`),
+
+    analyzeReels: (creatorId: string) =>
+        api.post(`/api/v1/instagram/analyze/${creatorId}`),
 };
 
 // ── Intelligence (Phase 2) ────────────────────────────────────────────────
@@ -28,6 +44,10 @@ export const intelligenceApi = {
 
 // ── Reach ─────────────────────────────────────────────────────────────────
 export const reachApi = {
+    /** Auto-derive reach snapshots from synced Reel data + run anomaly analysis. No manual input needed. */
+    syncFromInstagram: (creatorId: string) =>
+        api.post(`/api/v1/reach/sync/${creatorId}`),
+
     ingestSnapshot: (data: { creator_id: string; reach: number; impressions: number }) =>
         api.post("/api/v1/reach/snapshots", data),
 
@@ -40,8 +60,15 @@ export const reachApi = {
 
 // ── Comments ──────────────────────────────────────────────────────────────
 export const commentsApi = {
+    /** Auto-sync comments from all recent reels using stored Instagram token. No manual upload needed. */
+    syncFromInstagram: (creatorId: string, reelsLimit = 5) =>
+        api.post(`/api/v1/comments/sync/${creatorId}?reels_limit=${reelsLimit}`),
+
     analyzeBatch: (creatorId: string, comments: { content: string; author: string; platform?: string }[]) =>
         api.post("/api/v1/comments/analyze", { creator_id: creatorId, comments }),
+
+    syncReelComments: (creatorId: string, igMediaId: string) =>
+        api.post(`/api/v1/comments/sync-reel/${creatorId}/${igMediaId}`),
 
     getComments: (creatorId: string, category?: string, page = 1) =>
         api.get(`/api/v1/comments/${creatorId}`, { params: { category, page, page_size: 20 } }),

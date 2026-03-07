@@ -56,3 +56,10 @@ class S3Client:
         key = f"workload/{creator_id}/{timestamp}.json"
         self.upload_json(key, signal)
         return key
+
+    def archive_json(self, data: dict, prefix: str) -> str:
+        """Generic JSON archive to S3 under a given prefix. Returns the S3 key."""
+        timestamp = datetime.utcnow().strftime("%Y/%m/%d/%H%M%S")
+        key = f"{prefix}/{timestamp}.json"
+        self.upload_json(key, data)
+        return key

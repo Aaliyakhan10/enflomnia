@@ -54,6 +54,69 @@ class ReachAnomalyService:
         )
         return snapshot
 
+    def ingest_from_reels(self, db: Session, creator_id: str) -> List[ReachSnapshot]:
+        """
+        Auto-derive ReachSnapshots from the Reel table.
+        This eliminates the need for any manual data entry — Instagram sync
+        provides all the data needed.
+        Skips reels that already have a corresponding snapshot (by recorded_at date).
+        """
+        reels = (
+            db.query(Reel)
+            .filter(Reel.creator_id == creator_id, Reel.published_at.isnot(None))
+            .order_by(Reel.published_at.desc())
+            .limit(60)
+            .all()
+        )
+
+        # Build a set of already-existing snapshot dates to avoid duplicates
+        existing_dates = set()
+        existing_snapshots = (
+            db.query(ReachSnapshot)
+            .filter(ReachSnapshot.creator_id == creator_id)
+            .all()
+        )
+        for snap in existing_snapshots:
+            if snap.recorded_at:
+                existing_dates.add(snap.recorded_at.date())
+
+        created = []
+        for reel in reels:
+            if not reel.reach or reel.reach <= 0:
+                continue
+            reel_date = reel.published_at.date() if reel.published_at else None
+            if reel_date and reel_date in existing_dates:
+                continue  # already have a snapshot for this day
+
+            impressions = reel.plays or reel.reach  # plays ≈ impressions
+            snapshot = ReachSnapshot(
+                creator_id=creator_id,
+                reach=reel.reach,
+                impressions=impressions,
+            )
+            # Pin the recorded_at to the reel publish date for temporal accuracy
+            snapshot.recorded_at = reel.published_at
+            db.add(snapshot)
+            if reel_date:
+                existing_dates.add(reel_date)
+            created.append(snapshot)
+
+        if created:
+            db.commit()
+            for s in created:
+                db.refresh(s)
+            # Archive latest snapshot to S3
+            self.s3.archive_reach_snapshot(
+                creator_id,
+                {
+                    "auto_derived": True,
+                    "snapshots_created": len(created),
+                    "latest_reach": created[0].reach if created else 0,
+                },
+            )
+
+        return created
+
     # ------------------------------------------------------------------ #
     #  Analysis                                                            #
     # ------------------------------------------------------------------ #

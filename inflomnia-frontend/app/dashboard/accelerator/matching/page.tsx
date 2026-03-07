@@ -1,16 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Users, Plus, Loader, X, Play } from "lucide-react";
+import {
+    PersonStanding, Plus, Loader2, X, Sparkles, Target,
+    Search, CheckCircle2, Building2, TrendingUp, Handshake,
+    Film
+} from "lucide-react";
 import { matchingApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
-const INDUSTRIES = ["fitness", "beauty", "tech", "gaming", "food", "travel", "fashion", "finance", "education", "lifestyle"];
-const NICHES = ["fitness", "beauty", "tech", "gaming", "food", "travel", "fashion", "finance", "education", "lifestyle", "general"];
+const INDUSTRIES = ["lifestyle", "fitness", "beauty", "tech", "gaming", "food", "travel", "fashion", "finance"];
 
 function ScoreBar({ value, color }: { value: number; color: string }) {
     return (
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${value * 100}%`, background: color }} />
+        <div className="h-1.5 rounded-full overflow-hidden bg-gray-100 flex-1">
+            <div className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_0_8px_rgba(0,0,0,0.05)]"
+                style={{ width: `${value * 100}%`, background: color }} />
         </div>
     );
 }
@@ -18,22 +22,16 @@ function ScoreBar({ value, color }: { value: number; color: string }) {
 export default function MatchingPage() {
     const [matches, setMatches] = useState<any[]>([]);
     const [brands, setBrands] = useState<any[]>([]);
+    const [reels, setReels] = useState<any[]>([]);
+    const [selectedReelId, setSelectedReelId] = useState("");
     const [loading, setLoading] = useState(false);
     const [matching, setMatching] = useState(false);
     const [showAddBrand, setShowAddBrand] = useState(false);
-    const [tab, setTab] = useState<"matches" | "brands">("matches");
-
-    const [creatorForm, setCreatorForm] = useState({
-        niche: "fitness", platform: "instagram", reel_id: "",
-        follower_count: "", engagement_rate: "",
-        audience_description: "",
-    });
 
     const [brandForm, setBrandForm] = useState({
-        name: "", industry: "fitness", target_audience: "",
+        name: "", industry: "lifestyle", target_audience: "",
         content_niches: "", budget_range_min: "", budget_range_max: "",
     });
-    const [reels, setReels] = useState<any[]>([]);
 
     useEffect(() => { loadData(); }, []);
 
@@ -43,7 +41,7 @@ export default function MatchingPage() {
             const [matchRes, brandRes, reelRes] = await Promise.all([
                 matchingApi.getMatches(CREATOR_ID),
                 matchingApi.getBrands(),
-                instagramApi.getReels(CREATOR_ID).catch(() => ({ data: [] })),
+                instagramApi.getReels(CREATOR_ID),
             ]);
             setMatches(matchRes.data || []);
             setBrands(brandRes.data || []);
@@ -57,12 +55,7 @@ export default function MatchingPage() {
         try {
             const res = await matchingApi.findMatches({
                 creator_id: CREATOR_ID,
-                niche: creatorForm.niche,
-                platform: creatorForm.platform,
-                reel_id: creatorForm.reel_id || undefined,
-                follower_count: creatorForm.follower_count ? parseInt(creatorForm.follower_count) : undefined,
-                engagement_rate: creatorForm.engagement_rate ? parseFloat(creatorForm.engagement_rate) / 100 : undefined,
-                audience_description: creatorForm.audience_description || undefined,
+                reel_id: selectedReelId || undefined
             });
             setMatches(res.data || []);
         } catch { }
@@ -73,155 +66,218 @@ export default function MatchingPage() {
         e.preventDefault();
         try {
             await matchingApi.addBrand({
-                name: brandForm.name,
-                industry: brandForm.industry,
-                target_audience: brandForm.target_audience || undefined,
-                content_niches: brandForm.content_niches || undefined,
+                ...brandForm,
                 budget_range_min: brandForm.budget_range_min ? parseFloat(brandForm.budget_range_min) : undefined,
                 budget_range_max: brandForm.budget_range_max ? parseFloat(brandForm.budget_range_max) : undefined,
             });
-            setBrandForm({ name: "", industry: "fitness", target_audience: "", content_niches: "", budget_range_min: "", budget_range_max: "" });
-            setShowAddBrand(false);
-            loadData();
+            setBrandForm({ name: "", industry: "lifestyle", target_audience: "", content_niches: "", budget_range_min: "", budget_range_max: "" });
+            setShowAddBrand(false); loadData();
         } catch { }
     }
 
-    function cu(k: string, v: string) { setCreatorForm(f => ({ ...f, [k]: v })); }
-    function bu(k: string, v: string) { setBrandForm(f => ({ ...f, [k]: v })); }
-
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="p-8 max-w-5xl mx-auto space-y-8">
+            {/* Header */}
+            <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <Users size={22} className="text-indigo-400" /> Brand Matching
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
+                        <PersonStanding size={24} className="text-violet-500" />
+                        Brand Matching
                     </h1>
-                    <p className="text-gray-500 text-sm mt-0.5">Find brands that fit your audience, niche, and content style</p>
+                    <p className="text-sm text-gray-500 max-w-lg">
+                        Stop hunting for sponsors. Inflomnia AI finds brands that perfectly align with your audience and creative style.
+                    </p>
                 </div>
                 <button onClick={() => setShowAddBrand(true)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-sm font-medium hover:bg-indigo-100 transition-all">
-                    <Plus size={14} /> Add Brand
+                    className="btn btn-outline gap-2 px-4 shadow-sm">
+                    <Plus size={14} /> Register New Brand
                 </button>
             </div>
 
-            {/* Add Brand Modal */}
+            {/* Modal */}
             {showAddBrand && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-                    <div className="card w-full max-w-md space-y-4 relative">
-                        <button onClick={() => setShowAddBrand(false)} className="absolute top-4 right-4 text-gray-500 hover:text-white">
-                            <X size={16} />
+                <div className="fixed inset-0 bg-white/80 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+                    <div className="card w-full max-w-md space-y-6 relative shadow-2xl border-violet-100">
+                        <button onClick={() => setShowAddBrand(false)} className="absolute top-5 right-5 text-gray-400 hover:text-gray-900 transition-colors">
+                            <X size={18} />
                         </button>
-                        <h2 className="font-bold text-gray-900">Add Brand to Catalogue</h2>
-                        <form onSubmit={handleAddBrand} className="space-y-3">
-                            {[
-                                { label: "Brand Name *", key: "name", placeholder: "Nike" },
-                                { label: "Target Audience", key: "target_audience", placeholder: "18-35 female fitness enthusiasts" },
-                                { label: "Content Niches (comma-sep)", key: "content_niches", placeholder: "fitness,wellness,lifestyle" },
-                            ].map(({ label, key, placeholder }) => (
-                                <div key={key}>
-                                    <label className="text-xs text-gray-500 mb-1 block">{label}</label>
-                                    <input type="text" placeholder={placeholder} value={(brandForm as any)[key]}
-                                        onChange={e => bu(key, e.target.value)} required={key === "name"}
-                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
-                                </div>
-                            ))}
+                        <div>
+                            <h2 className="text-xl font-black text-gray-900 tracking-tight">Add a Brand Pair</h2>
+                            <p className="text-xs text-gray-500 mt-1">Found a brand you want to pitch to? Add them here.</p>
+                        </div>
+
+                        <form onSubmit={handleAddBrand} className="space-y-4">
                             <div>
-                                <label className="text-xs text-gray-500 mb-1 block">Industry</label>
-                                <select value={brandForm.industry} onChange={e => bu("industry", e.target.value)}
-                                    className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500">
-                                    {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                                </select>
+                                <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1.5 block">Brand Identity</label>
+                                <input type="text" placeholder="e.g. Lululemon" value={brandForm.name}
+                                    onChange={e => setBrandForm(f => ({ ...f, name: e.target.value }))} required
+                                    className="focus:border-violet-500" />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Budget Min $</label>
-                                    <input type="number" value={brandForm.budget_range_min} onChange={e => bu("budget_range_min", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
+                                    <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1.5 block">Industry</label>
+                                    <select value={brandForm.industry} onChange={e => setBrandForm(f => ({ ...f, industry: e.target.value }))}
+                                        className="focus:border-violet-500">
+                                        {INDUSTRIES.map(i => <option key={i} value={i}>{i.charAt(0).toUpperCase() + i.slice(1)}</option>)}
+                                    </select>
                                 </div>
                                 <div>
-                                    <label className="text-xs text-gray-500 mb-1 block">Budget Max $</label>
-                                    <input type="number" value={brandForm.budget_range_max} onChange={e => bu("budget_range_max", e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:border-indigo-500" />
+                                    <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1.5 block">Niches</label>
+                                    <input type="text" placeholder="yoga, wellness" value={brandForm.content_niches}
+                                        onChange={e => setBrandForm(f => ({ ...f, content_niches: e.target.value }))}
+                                        className="focus:border-violet-500" />
                                 </div>
                             </div>
-                            <button type="submit" className="w-full py-2 rounded-lg bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-all">
-                                Add Brand
+                            <div>
+                                <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1.5 block">Target Audience</label>
+                                <input type="text" placeholder="e.g. 20-35 females in UK" value={brandForm.target_audience}
+                                    onChange={e => setBrandForm(f => ({ ...f, target_audience: e.target.value }))}
+                                    className="focus:border-violet-500" />
+                            </div>
+                            <button type="submit" className="w-full btn btn-brand py-3.5 text-sm font-bold shadow-lg shadow-violet-500/20 mt-2"
+                                style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
+                                Add Brand to Catalogue
                             </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-                {/* Creator Profile Sidebar */}
-                <div className="card space-y-4 md:col-span-1 self-start">
-                    <h2 className="font-semibold text-gray-900 text-xs uppercase tracking-wider">AI Profile Engine</h2>
-                    <p className="text-[10px] text-gray-400 leading-relaxed">
-                        Inflomnia automatically synthesizes your connected Instagram account's follower demographics, engagement rate, and niche analysis to find the best brand matches.
-                    </p>
-                    <button onClick={handleFindMatches} disabled={matching || brands.length === 0}
-                        className="w-full py-2.5 rounded-lg bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
-                        {matching ? <Loader size={12} className="animate-spin" /> : null}
-                        {matching ? "Matching…" : "Auto-Find Matches"}
-                    </button>
-                    {brands.length === 0 && (
-                        <p className="text-[10px] text-yellow-500 text-center">Add brands to match first.</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Matches */}
-            <div className="md:col-span-3 space-y-3">
-                {loading ? (
-                    <div className="card flex items-center justify-center py-16 text-gray-500 text-sm">
-                        <Loader size={16} className="animate-spin mr-2" /> Loading…
-                    </div>
-                ) : matches.length === 0 ? (
-                    <div className="card text-center py-12">
-                        <p className="text-gray-500 text-sm mb-2">No matches yet.</p>
-                        <p className="text-gray-600 text-xs">Add some brands and click "Find Matches".</p>
-                    </div>
-                ) : matches.map((m: any) => (
-                    <div key={m.id} className="card space-y-3">
-                        <div className="flex items-start justify-between">
-                            <div>
-                                <h3 className="font-bold text-gray-900">{m.brand_name}</h3>
-                                <span className="text-xs text-gray-500 capitalize">{m.brand_industry}</span>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* AI Profile Sidebar */}
+                <div className="lg:col-span-1 space-y-4">
+                    <div className="card space-y-5 shadow-sm bg-violet-50/30 border-violet-100/50">
+                        <div className="flex items-center gap-2">
+                            <div className="p-2 rounded-xl bg-violet-100/50 text-violet-600">
+                                <Sparkles size={16} />
                             </div>
-                            <div className="text-right">
-                                <div className="text-2xl font-bold text-indigo-600">{(m.relevance_score * 100).toFixed(0)}%</div>
-                                <div className="text-[10px] text-gray-500">match</div>
-                            </div>
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">AI Profile Engine</h3>
+                        </div>
+                        <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
+                            Inflomnia automatically synthesizes your Instagram data, reach history, and audience vibe to calculate perfect alignment scores.
+                        </p>
+                        <div className="space-y-4 pt-2">
+                            <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1 block">Personalize by Reel</label>
+                            <select
+                                value={selectedReelId}
+                                onChange={e => setSelectedReelId(e.target.value)}
+                                className="text-[11px] font-bold text-gray-600 bg-white border-gray-100 hover:border-violet-200 transition-all focus:border-violet-500 shadow-sm"
+                            >
+                                <option value="">Entire Profile Vibe</option>
+                                {reels.map(r => (
+                                    <option key={r.id} value={r.id}>
+                                        {r.caption ? r.caption.slice(0, 30) + '...' : 'Untitled Reel'}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span>Niche fit</span>
-                                    <span className="text-gray-900">{(m.niche_match * 100).toFixed(0)}%</span>
-                                </div>
-                                <ScoreBar value={m.niche_match || 0} color="#6366f1" />
+                        <button onClick={handleFindMatches} disabled={matching || (brands.length === 0 && !selectedReelId)}
+                            className="w-full btn btn-brand py-3 text-xs font-bold shadow-md shadow-violet-500/10"
+                            style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
+                            {matching ? <Loader2 size={12} className="animate-spin" /> : <Search size={12} />}
+                            {matching ? "Matching..." : "Find My Matches"}
+                        </button>
+                        {brands.length === 0 && (
+                            <div className="p-3 rounded-xl bg-amber-50 border border-amber-100 text-[9px] font-bold text-amber-700 leading-tight uppercase flex items-center gap-2">
+                                <Building2 size={10} /> Add brands to start matching
                             </div>
-                            <div>
-                                <div className="flex justify-between mb-1">
-                                    <span>Audience overlap</span>
-                                    <span className="text-gray-900">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
-                                </div>
-                                <ScoreBar value={m.audience_overlap || 0} color="#22c55e" />
-                            </div>
-                        </div>
-
-                        <p className="text-gray-400 text-sm leading-relaxed">{m.fit_reasoning}</p>
-
-                        {(m.budget_range_min || m.budget_range_max) && (
-                            <p className="text-xs text-gray-600">
-                                Budget: <strong className="text-gray-800">
-                                    ${m.budget_range_min?.toFixed(0) || "?"} – ${m.budget_range_max?.toFixed(0) || "?"}
-                                </strong>
-                            </p>
                         )}
                     </div>
-                ))}
+
+                    <div className="card shadow-sm space-y-4 bg-gray-50 border-gray-100">
+                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Matching Metrics</h4>
+                        {[
+                            { label: "Niche Fit", desc: "Topic alignment count" },
+                            { label: "Audience Overlap", desc: "Demographic sync" },
+                        ].map((m, i) => (
+                            <div key={i} className="flex gap-2">
+                                <div className="p-1 rounded bg-white border border-gray-100 shadow-sm">
+                                    <CheckCircle2 size={10} className="text-emerald-500" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-bold text-gray-700 leading-none mb-0.5">{m.label}</p>
+                                    <p className="text-[9px] text-gray-400">{m.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Matches Feed */}
+                <div className="lg:col-span-3 space-y-4">
+                    {loading ? (
+                        <div className="card flex items-center justify-center py-24 text-gray-400 gap-3 border-dashed border-2 bg-transparent">
+                            <Loader2 size={24} className="animate-spin text-violet-300" />
+                            <span className="text-sm font-medium">Calculating brand alignment...</span>
+                        </div>
+                    ) : matches.length === 0 ? (
+                        <div className="card text-center py-20 bg-gray-50/50 border-dashed border-2">
+                            <Handshake size={48} className="text-gray-100 mx-auto mb-4" />
+                            <p className="text-gray-400 font-medium">No matches calculated.</p>
+                            <p className="text-xs text-gray-300 mt-1">Register some brands or click "Find My Matches".</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-4">
+                            {matches.map((m: any) => (
+                                <div key={m.id} className="card group hover:shadow-xl transition-all duration-300 border-gray-100 pb-5">
+                                    <div className="flex items-start justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-violet-50 group-hover:text-violet-600 transition-colors shadow-sm">
+                                                <Building2 size={20} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none mb-1.5">{m.brand_name}</h3>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{m.brand_industry}</span>
+                                                    {m.budget_range_max && (
+                                                        <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">💰 Up to ${m.budget_range_max.toLocaleString()}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-3xl font-black tracking-tighter text-violet-600 leading-none">
+                                                {(m.relevance_score * 100).toFixed(0)}%
+                                            </div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Match</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                        <div className="space-y-4">
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                    <span>Niche Alignment</span>
+                                                    <span className="text-gray-900">{(m.niche_match * 100).toFixed(0)}%</span>
+                                                </div>
+                                                <ScoreBar value={m.niche_match || 0} color="linear-gradient(90deg, #7c3aed, #8b5cf6)" />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                                    <span>Audience Synergy</span>
+                                                    <span className="text-gray-900">{((m.audience_overlap || 0) * 100).toFixed(0)}%</span>
+                                                </div>
+                                                <ScoreBar value={m.audience_overlap || 0} color="linear-gradient(90deg, #10b981, #34d399)" />
+                                            </div>
+                                        </div>
+                                        <div className="p-4 rounded-2xl bg-gray-50/80 border border-gray-100 flex items-start gap-3">
+                                            <Sparkles size={14} className="text-violet-400 mt-1 flex-shrink-0" />
+                                            <p className="text-xs text-gray-600 leading-relaxed font-medium italic">&ldquo;{m.fit_reasoning}&rdquo;</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">Personalized Brand Match</p>
+                                        <button className="text-xs font-bold text-violet-600 hover:text-violet-800 transition-colors flex items-center gap-1.5 group/btn">
+                                            View Pitch Strategy <TrendingUp size={12} className="group-hover/btn:translate-y-[-1px] transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

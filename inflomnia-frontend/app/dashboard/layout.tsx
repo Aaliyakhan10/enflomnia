@@ -1,33 +1,41 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Shield, TrendingDown, Zap, LayoutDashboard, DollarSign, FileText, Users, Rocket, Instagram, Lightbulb, Calendar } from "lucide-react";
+import {
+    Home, BarChart2, MessageCircle, BatteryCharging, Film,
+    BadgeDollarSign, PersonStanding, ScrollText,
+    Brain, CalendarDays, Sparkles
+} from "lucide-react";
 
-const shieldNav = [
-    { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/reach", label: "Reach Health", icon: TrendingDown },
-    { href: "/dashboard/shield", label: "Comment Shield", icon: Shield },
-    { href: "/dashboard/workload", label: "Workload Signals", icon: Zap },
-    { href: "/dashboard/instagram", label: "Instagram Reels", icon: Instagram },
+const coreNav = [
+    { href: "/dashboard", label: "My Dashboard", icon: Home },
+    { href: "/dashboard/reach", label: "Reach Health", icon: BarChart2 },
+    { href: "/dashboard/shield", label: "Comment Shield", icon: MessageCircle },
+    { href: "/dashboard/workload", label: "Creator Burnout", icon: BatteryCharging },
+    { href: "/dashboard/instagram", label: "My Reels", icon: Film },
 ];
 
-const acceleratorNav = [
-    { href: "/dashboard/accelerator/pricing", label: "Brand Deal Pricing", icon: DollarSign },
-    { href: "/dashboard/accelerator/matching", label: "Brand Matching", icon: Users },
-    { href: "/dashboard/accelerator/scripts", label: "Script Generator", icon: FileText },
+const monetizeNav = [
+    { href: "/dashboard/accelerator/pricing", label: "Deal Pricing", icon: BadgeDollarSign },
+    { href: "/dashboard/accelerator/matching", label: "Brand Matching", icon: PersonStanding },
+    { href: "/dashboard/accelerator/scripts", label: "Script Writer", icon: ScrollText },
 ];
 
-const intelligenceNav = [
-    { href: "/dashboard/intelligence", label: "Insights & Strategy", icon: Lightbulb },
-    { href: "/dashboard/scheduler", label: "Content Scheduler", icon: Calendar },
+const aiNav = [
+    { href: "/dashboard/intelligence", label: "AI Insights", icon: Brain },
+    { href: "/dashboard/scheduler", label: "Post Scheduler", icon: CalendarDays },
 ];
 
-function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: string; icon: React.ElementType; pathname: string }) {
+function NavLink({ href, label, icon: Icon, pathname }: {
+    href: string; label: string; icon: React.ElementType; pathname: string;
+}) {
     const active = pathname === href;
     return (
-        <Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${active ? "bg-fuchsia-600/10 text-fuchsia-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+        <Link href={href} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${active
+                ? "bg-violet-50 text-violet-700 font-semibold shadow-sm"
+                : "text-gray-500 hover:text-gray-800 hover:bg-gray-50"
             }`}>
-            <Icon size={15} />
+            <Icon size={16} className={active ? "text-violet-600" : "text-gray-400"} />
             {label}
         </Link>
     );
@@ -35,79 +43,62 @@ function NavLink({ href, label, icon: Icon, pathname }: { href: string; label: s
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-
     return (
-        <div className="flex min-h-screen">
-            {/* Sidebar */}
-            <aside className="w-60 flex-shrink-0 border-r border-gray-200 flex flex-col"
-                style={{ background: "var(--surface-2)" }}>
+        <div className="flex min-h-screen bg-gray-50">
+
+            {/* ── Sidebar ── */}
+            <aside className="w-60 flex-shrink-0 flex flex-col bg-white border-r border-gray-100 shadow-sm">
 
                 {/* Logo */}
-                <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-200">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-violet-600 flex items-center justify-center shadow-lg shadow-fuchsia-500/20">
-                        <Shield size={16} className="text-white" />
-                    </div>
-                    <div>
-                        <span className="font-bold text-sm text-gray-900 tracking-wide">Inflomnia</span>
-                        <p className="text-[10px] text-fuchsia-600 font-medium">Creator Hub</p>
+                <div className="px-5 pt-6 pb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-2xl flex items-center justify-center shadow-md"
+                            style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
+                            <Sparkles size={17} className="text-white" />
+                        </div>
+                        <div>
+                            <div className="text-sm font-bold text-gray-900 tracking-tight">Inflomnia</div>
+                            <div className="text-[11px] font-medium" style={{ color: "#7c3aed" }}>Creator Hub</div>
+                        </div>
                     </div>
                 </div>
 
-                <nav className="p-3 flex-1 space-y-4 overflow-y-auto">
-                    {/* The Shield */}
+                {/* Nav */}
+                <nav className="flex-1 px-3 pt-4 pb-3 space-y-5 overflow-y-auto">
                     <div>
-                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1">
-                            🛡️ The Shield
-                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">My Space</p>
                         <div className="space-y-0.5">
-                            {shieldNav.map(item => (
-                                <NavLink key={item.href} {...item} pathname={pathname} />
-                            ))}
+                            {coreNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                         </div>
                     </div>
-
-                    {/* The Accelerator */}
                     <div>
-                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1 mt-4">
-                            🚀 The Accelerator
-                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Monetize</p>
                         <div className="space-y-0.5">
-                            {acceleratorNav.map(item => (
-                                <NavLink key={item.href} {...item} pathname={pathname} />
-                            ))}
+                            {monetizeNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                         </div>
                     </div>
-
-                    {/* Content Intelligence */}
                     <div>
-                        <p className="px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-600 mb-1 mt-4">
-                            🧠 Content Intelligence
-                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">AI Tools</p>
                         <div className="space-y-0.5">
-                            {intelligenceNav.map(item => (
-                                <NavLink key={item.href} {...item} pathname={pathname} />
-                            ))}
+                            {aiNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                         </div>
                     </div>
                 </nav>
 
-                {/* Footer */}
-                <div className="p-3 border-t border-gray-200">
-                    <div className="rounded-lg p-3 flex items-center gap-3"
-                        style={{ background: "var(--surface-3)", border: "1px solid var(--border)" }}>
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></div>
+                {/* Inflomnia AI badge */}
+                <div className="p-3 border-t border-gray-100">
+                    <div className="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-violet-50 border border-violet-100">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] flex-shrink-0" />
                         <div>
-                            <p className="text-[11px] font-semibold text-gray-900">Claude 3.5 Sonnet</p>
-                            <p className="text-[10px] text-emerald-600">AI Engine Active</p>
+                            <p className="text-xs font-semibold text-gray-800">Inflomnia AI</p>
+                            <p className="text-[10px] text-emerald-600">Active &amp; ready</p>
                         </div>
                     </div>
                 </div>
             </aside>
 
-            {/* Main content */}
-            <main className="flex-1 overflow-auto">
-                {children}
-            </main>
+            {/* Main */}
+            <main className="flex-1 overflow-auto">{children}</main>
         </div>
     );
 }
