@@ -46,33 +46,66 @@ class SchedulerService:
         """
         Combines Workload Signal (when to post) with Prediction Service (what to post).
         """
-        # 1. Get workload signal to know WHICH days to post
+        # 1. Get workload signal to know WHICH days to post and HOW OFTEN
         signal = self.workload_service.get_latest_signal(db, creator_id)
         if not signal:
             # Generate one on the fly if missing
             signal = self.workload_service.analyze_and_generate(db, creator_id)
         
         best_days = [d.lower() for d in signal.get("best_days", ["monday", "wednesday", "friday"])]
+        rec_per_week = signal.get("recommended_posts_per_week", 3)
+        
         if not best_days:
             best_days = ["monday", "wednesday", "friday"]
 
         # 2. Get content suggestions
         suggestions = self.prediction_service.generate_content_suggestions(db, creator_id)
+        if not suggestions:
+            # Fallback if no suggestions
+            suggestions = [{"title": "Dynamic Content", "format": "Reel", "hook_idea": "Stay consistent!", "rationale": "High engagement slot."}]
         
         # 3. Build the schedule over the next `days_ahead`
         target_dates = []
         today = datetime.utcnow()
+        
+        # We want to fit `rec_per_week` posts into a 7-day window.
+        # If days_ahead > 7, we scale.
+        total_posts_needed = int((rec_per_week / 7) * days_ahead)
+        if total_posts_needed < 1:
+            total_posts_needed = 1
+
+        # Find all matching "best days" in the window
+        potential_slots = []
         for i in range(1, days_ahead + 1):
-            target_date = today + timedelta(days=i)
-            dow = target_date.strftime("%A").lower()
+            dt = today + timedelta(days=i)
+            dow = dt.strftime("%A").lower()
             if dow in best_days:
-                # Default to 5 PM
-                target_dates.append(target_date.replace(hour=17, minute=0, second=0, microsecond=0))
+                # Get dynamic peak hour
+                peak_hour = self.workload_service.get_best_time_for_day(db, creator_id, dow)
+                slot_time = dt.replace(hour=peak_hour, minute=0, second=0, microsecond=0)
+                potential_slots.append(slot_time)
+
+        # If we have more best days than needed, we take the top ones (already ordered by best_days usually)
+        # If we have fewer, we might need to add more days.
+        # For simplicity, we'll take all potential slots up to total_posts_needed.
+        # If potential_slots is empty (unlikely with fallbacks), we'll just add tomorrow.
+        
+        if not potential_slots:
+            tomorrow = today + timedelta(days=1)
+            peak_hour = self.workload_service.get_best_time_for_day(db, creator_id, tomorrow.strftime("%A"))
+            potential_slots.append(tomorrow.replace(hour=peak_hour, minute=0, second=0, microsecond=0))
+
+        # Truncate or pad to match total_posts_needed if possible
+        # But usually we just want to fill the "best days" within the window.
+        # Let's stick to the best days found, but ensure we don't exceed a reasonable cap
+        # or fall too short of the recommendation.
+        
+        scheduled_slots = potential_slots[:total_posts_needed]
         
         new_items = []
         sug_idx = 0
         
-        for dt in target_dates:
+        for dt in scheduled_slots:
             # Rotate through suggestions
             sug = suggestions[sug_idx % len(suggestions)]
             sug_idx += 1

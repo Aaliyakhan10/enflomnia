@@ -136,6 +136,20 @@ class WorkloadSignalService:
             "generated_at": str(signal.generated_at),
         }
 
+    def get_best_time_for_day(self, db: Session, creator_id: str, day_name: str) -> int:
+        """Find the peak engagement hour for a specific day from the heatmap."""
+        heatmap = self.compute_heatmap(db, creator_id)
+        day_data = heatmap.get(day_name.capitalize(), [0] * 24)
+        
+        # Find the index (hour) of the maximum engagement
+        peak_hour = day_data.index(max(day_data))
+        
+        # If no engagement data, default to 18:00 (6 PM)
+        if day_data[peak_hour] == 0:
+            return 18
+            
+        return peak_hour
+
     # ------------------------------------------------------------------ #
     #  Helpers                                                             #
     # ------------------------------------------------------------------ #
