@@ -3,11 +3,11 @@ runtime: python311
 build:
   commands:
     - python3 -m pip install --upgrade pip
-    - python3 -m pip install -r requirements.txt
+    - python3 -m pip install --target . -r requirements.txt
 run:
   command: python3 -m gunicorn -w 4 -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:8000
   network:
     port: 8000
   env:
     - name: PYTHONPATH
-      value: "."
+      value: ".:$PYTHONPATH"
