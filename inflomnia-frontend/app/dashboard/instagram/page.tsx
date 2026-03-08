@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
     Instagram, RefreshCw, Sparkles, Heart, MessageCircle,
     Eye, Play, Clock, Star, ExternalLink, Loader2,
-    ChevronRight, Zap, LogOut
+    ChevronRight, Zap, LogOut, Film, AlertCircle
 } from "lucide-react";
 
 const CREATOR_ID = "demo-creator-001";
@@ -201,7 +201,7 @@ export default function InstagramPage() {
                         </div>
                         <div className="text-center px-4 border-l border-gray-100">
                             <div className="text-xl font-black text-gray-900 leading-none">{account.followers_count?.toLocaleString() ?? "—"}</div>
-                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Founders</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Followers</div>
                         </div>
                         <div className="text-right">
                             <button onClick={handleDisconnect} disabled={loading}

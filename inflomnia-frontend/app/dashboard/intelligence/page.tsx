@@ -108,7 +108,7 @@ export default function ContentIntelligencePage() {
                                 <div className="text-4xl font-black tracking-tighter mb-1">
                                     +{data.projected_growth_followers?.toLocaleString() || "1,240"}
                                 </div>
-                                <p className="text-xs text-violet-100/80 font-medium">Predicted New Founders</p>
+                                <p className="text-xs text-violet-100/80 font-medium">Predicted New Followers</p>
 
                                 <div className="mt-8 p-3 rounded-xl bg-black/10 border border-white/10 text-xs text-violet-50 leading-relaxed italic font-medium">
                                     &ldquo;Your current reel retention is up 12% — maintaining this pace will trigger the explore algorithm.&rdquo;

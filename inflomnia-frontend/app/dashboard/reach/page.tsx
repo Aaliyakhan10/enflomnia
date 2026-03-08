@@ -19,7 +19,7 @@ export default function ReachPage() {
     const [snapshots, setSnapshots] = useState<any[]>([]);
     const [analysis, setAnalysis] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    const [form, setForm] = useState({ reach: "", impressions: "" });
+    const [syncing, setSyncing] = useState(false);
 
     useEffect(() => { fetchData(); }, []);
 
@@ -36,23 +36,21 @@ export default function ReachPage() {
         setLoading(false);
     }
 
-    async function handleIngest(e: React.FormEvent) {
-        e.preventDefault();
-        if (!form.reach) return;
+    async function handleSync() {
+        setSyncing(true);
         try {
-            await reachApi.ingestSnapshot({
-                creator_id: CREATOR_ID,
-                reach: parseInt(form.reach),
-                impressions: parseInt(form.impressions) || 0,
-            });
-            setForm({ reach: "", impressions: "" });
-            fetchData();
+            await reachApi.syncFromInstagram(CREATOR_ID);
+            await fetchData();
         } catch { }
+        setSyncing(false);
     }
 
     const status = STATUS_MAP[analysis?.anomaly_type as keyof typeof STATUS_MAP] || STATUS_MAP.none;
     const Icon = status.icon;
-    const chartData = snapshots.map((s, i) => ({ name: `Day ${snapshots.length - i}`, reach: s.reach }));
+    const chartData = snapshots.map((s, i) => ({
+        name: new Date(s.recorded_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        reach: s.reach
+    }));
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload?.length) {
@@ -67,41 +65,63 @@ export default function ReachPage() {
     };
 
     return (
-        <div className="p-8 max-w-4xl mx-auto space-y-6">
+        <div className="p-8 max-w-5xl mx-auto space-y-8">
 
             {/* Header */}
             <div className="flex items-start justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
-                        <BarChart2 size={22} style={{ color: "#7c3aed" }} />
-                        Reach Health
+                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
+                        <BarChart2 size={24} className="text-violet-500" />
+                        Reach Health Deep-Scan
                     </h1>
-                    <p className="text-sm text-gray-500">
-                        Inflomnia tracks your reach daily and alerts you the moment something looks off.
+                    <p className="text-sm text-gray-500 max-w-lg">
+                        Inflomnia AI automatically monitors your Instagram patterns. No manual data entry required.
                     </p>
                 </div>
-                <button onClick={fetchData} disabled={loading} className="btn btn-outline gap-2">
-                    <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
-                </button>
+                <div className="flex gap-3">
+                    <button onClick={fetchData} disabled={loading || syncing} className="btn bg-white border-gray-100 text-gray-400 hover:text-gray-600">
+                        <RefreshCw size={13} className={loading && !syncing ? "animate-spin" : ""} />
+                    </button>
+                    <button onClick={handleSync} disabled={syncing}
+                        className="btn btn-brand gap-2 px-5 py-2.5 shadow-md shadow-violet-500/20"
+                        style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
+                        {syncing ? <RefreshCw size={14} className="animate-spin" /> : <BarChart2 size={14} />}
+                        {syncing ? "Scanning Instagram..." : "AI Intelligence Sync"}
+                    </button>
+                </div>
             </div>
 
             {/* Status card */}
             {analysis && (
-                <div className="card flex items-start gap-4" style={{ borderColor: status.color + "30" }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                <div className="card flex items-start gap-5 p-6" style={{ borderColor: status.color + "25" }}>
+                    <div className="w-12 h-12 rounded-[18px] flex items-center justify-center flex-shrink-0 shadow-sm"
                         style={{ background: status.bg }}>
-                        <Icon size={18} style={{ color: status.color }} />
+                        <Icon size={22} style={{ color: status.color }} />
                     </div>
                     <div className="flex-1">
-                        <p className="font-semibold text-gray-900 mb-1">{status.label}</p>
-                        <p className="text-sm text-gray-500 leading-relaxed">{analysis.reasoning}</p>
+                        <div className="flex items-center gap-3 mb-1">
+                            <p className="font-bold text-gray-900 tracking-tight">{status.label}</p>
+                            {analysis.anomaly_type !== 'none' && (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase text-white" style={{ background: status.color }}>Action Needed</span>
+                            )}
+                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed font-medium">{analysis.reasoning}</p>
+
                         {analysis.baseline_reach && (
-                            <div className="flex gap-5 mt-3 text-xs">
-                                <span className="text-gray-400">Baseline  <strong className="text-gray-700">{analysis.baseline_reach.toLocaleString()}</strong></span>
-                                <span className="text-gray-400">Current   <strong className="text-gray-700">{analysis.current_reach?.toLocaleString()}</strong></span>
-                                {analysis.drop_percentage && (
-                                    <span className="text-gray-400">Drop  <strong style={{ color: status.color }}>▼ {analysis.drop_percentage}%</strong></span>
-                                )}
+                            <div className="flex gap-6 mt-5 py-4 border-t border-gray-50">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Typical Performance</p>
+                                    <p className="text-lg font-black text-gray-900 tracking-tighter">{analysis.baseline_reach.toLocaleString()} <span className="text-[10px] text-gray-400">avg</span></p>
+                                </div>
+                                <div className="space-y-1 border-l pl-6 border-gray-100">
+                                    <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Latest Window</p>
+                                    <p className="text-lg font-black text-gray-900 tracking-tighter" style={{ color: analysis.drop_percentage > 20 ? status.color : 'inherit' }}>
+                                        {analysis.current_reach?.toLocaleString()}
+                                        {analysis.drop_percentage && (
+                                            <span className="text-xs ml-2 font-bold opacity-80 decoration-2 underline-offset-4 underline">{analysis.drop_percentage}% diff</span>
+                                        )}
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -109,53 +129,56 @@ export default function ReachPage() {
             )}
 
             {/* Chart */}
-            <div className="card">
-                <h2 className="text-sm font-semibold text-gray-700 mb-4">Your Reach Over Time</h2>
+            <div className="card p-8">
+                <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-xs font-black uppercase tracking-widest text-gray-400">Reach Distribution</h2>
+                    <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400">
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-violet-500" /> Daily Reach</div>
+                        <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full border border-violet-500 border-dashed" /> Baseline</div>
+                    </div>
+                </div>
+
                 {chartData.length >= 2 ? (
-                    <ResponsiveContainer width="100%" height={220}>
-                        <LineChart data={chartData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                            <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} />
-                            <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} axisLine={false} tickLine={false} width={55} />
-                            <Tooltip content={<CustomTooltip />} />
-                            {analysis?.baseline_reach && (
-                                <ReferenceLine y={analysis.baseline_reach} stroke="#7c3aed"
-                                    strokeDasharray="5 5"
-                                    label={{ value: "baseline", fill: "#7c3aed", fontSize: 10 }} />
-                            )}
-                            <Line type="monotone" dataKey="reach" stroke="#7c3aed" strokeWidth={2.5}
-                                dot={{ fill: "#7c3aed", r: 4, strokeWidth: 0 }}
-                                activeDot={{ r: 6, fill: "#7c3aed", stroke: "#ede9fe", strokeWidth: 3 }} />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name"
+                                    tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    dy={10}
+                                />
+                                <YAxis hide />
+                                <Tooltip content={<CustomTooltip />} />
+                                {analysis?.baseline_reach && (
+                                    <ReferenceLine y={analysis.baseline_reach} stroke="#7c3aed"
+                                        strokeDasharray="4 4"
+                                        opacity={0.4}
+                                    />
+                                )}
+                                <Line type="monotone" dataKey="reach" stroke="#7c3aed" strokeWidth={3}
+                                    dot={{ fill: "#fff", stroke: "#7c3aed", strokeWidth: 2, r: 4 }}
+                                    activeDot={{ r: 6, fill: "#7c3aed", stroke: "#ede9fe", strokeWidth: 4 }}
+                                />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </div>
                 ) : (
-                    <div className="h-[220px] flex flex-col items-center justify-center gap-2 text-gray-400">
-                        <BarChart2 size={28} className="text-gray-200" />
-                        <p className="text-sm">Add at least 2 data points to see your chart</p>
+                    <div className="h-[280px] flex flex-col items-center justify-center gap-4 text-gray-300 border-dashed border-2 rounded-2xl bg-gray-50/30">
+                        <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-200">
+                            <BarChart2 size={32} />
+                        </div>
+                        <div className="text-center">
+                            <p className="text-sm font-black text-gray-500">Awaiting Historical Intelligence</p>
+                            <p className="text-[11px] font-medium mt-1">Run an AI Sync to pull your latest performance metrics.</p>
+                            <button onClick={handleSync} className="text-violet-500 font-bold text-[11px] mt-4 decoration-2 underline-offset-4 underline">Start First Deep Scan</button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Simulate form */}
-            <div className="card">
-                <h2 className="text-sm font-semibold text-gray-700 mb-4">Add a Reach Snapshot</h2>
-                <form className="flex gap-3 items-end" onSubmit={handleIngest}>
-                    <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1.5 block font-medium">Reach *</label>
-                        <input type="number" placeholder="e.g. 12,000" value={form.reach}
-                            onChange={e => setForm(f => ({ ...f, reach: e.target.value }))} />
-                    </div>
-                    <div className="flex-1">
-                        <label className="text-xs text-gray-500 mb-1.5 block font-medium">Impressions</label>
-                        <input type="number" placeholder="e.g. 50,000" value={form.impressions}
-                            onChange={e => setForm(f => ({ ...f, impressions: e.target.value }))} />
-                    </div>
-                    <button type="submit" className="btn btn-brand" style={{ flexShrink: 0 }}>
-                        <Plus size={14} /> Add
-                    </button>
-                </form>
-            </div>
-
+            {/* Removed manual snapshot form — fully automated */}
         </div>
     );
 }

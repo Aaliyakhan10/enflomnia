@@ -167,7 +167,7 @@ export default function PricingPage() {
                                 {/* Verdict Alert */}
                                 {verdict && (
                                     <div className="card flex items-center gap-4 py-4 shadow-md transition-all border-0 ring-1 ring-inset"
-                                        style={{ ringColor: verdict.color + '20', background: verdict.bg + '30' }}>
+                                        style={{ borderColor: verdict.color + '20', background: verdict.bg + '30' }}>
                                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: verdict.bg, color: verdict.color }}>
                                             <verdict.icon size={20} />
                                         </div>

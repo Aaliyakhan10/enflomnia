@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import {
     BatteryCharging, TrendingUp, TrendingDown, Minus,
     RefreshCw, Loader2, Calendar, Clock, AlertTriangle,
-    Info, Sparkles, CheckCircle2
+    Info, Sparkles, CheckCircle2, Zap
 } from "lucide-react";
 import { workloadApi } from "@/lib/api";
 

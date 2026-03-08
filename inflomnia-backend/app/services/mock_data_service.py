@@ -30,15 +30,30 @@ def seed_mock_instagram_data(db: Session, creator_id: str):
         db.commit()
 
     # 2. Check reels
-    reels_count = db.query(Reel).filter(Reel.creator_id == creator_id).count()
-    if reels_count > 0:
-        return  # Already seeded or has real data
+    reels = db.query(Reel).filter(Reel.creator_id == creator_id).all()
+    
+    # If they have reels but reach is missing (None/0), we still want to seed reach
+    has_reach = any((r.reach and r.reach > 0) for r in reels)
+    
+    if reels and has_reach:
+        return  # Already seeded with good data
 
     now = datetime.now(timezone.utc)
     base_reach = random.randint(5000, 25000)
 
-    reels = []
-    
+    # If we already have reels but no reach, we patch them
+    if reels:
+        for i, reel in enumerate(reels):
+            # Same performance logic as below but applying to existing objects
+            pt = random.choices(["viral", "good", "average", "flop"], weights=[0.05, 0.25, 0.5, 0.2])[0]
+            reach = int(base_reach * (8.0 if pt=="viral" else 2.0 if pt=="good" else 0.4 if pt=="flop" else 1.0) * random.uniform(0.8, 1.2))
+            reel.reach = reach
+            reel.plays = int(reach * 1.2)
+            reel.total_interactions = int(reach * 0.08)
+        db.commit()
+        return
+
+    # No reels at all? Create new ones (existing logic)
     caption_templates = [
         "Day in the life of a creator! 🎥 What's your favorite part of the process? #behindthescenes #creatorlife",
         "Wait for the end... you won't believe this trick! 🤯 Drop a 💯 if you're trying this tomorrow.",
