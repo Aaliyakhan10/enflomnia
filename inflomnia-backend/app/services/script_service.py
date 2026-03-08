@@ -32,7 +32,22 @@ class ScriptService:
         brand_brief: Optional[str] = None,
         tone: str = "entertaining",
     ) -> dict:
-        """Generate a branded content script via Claude."""
+        """Generate a branded content script via Claude. Caches for 1 hour."""
+        # ── 0. Check Cache ──
+        existing = db.query(Script).filter(
+            Script.creator_id == creator_id,
+            Script.topic == topic,
+            Script.tone == tone,
+            Script.brand_name == brand_name
+        ).order_by(Script.created_at.desc()).first()
+        
+        if existing:
+            delta = datetime.now() - existing.created_at
+            if delta.total_seconds() < 3600: # 1 hour cache for variety
+                res = self._format_output(existing)
+                res["cached"] = True
+                return res
+
         raw = self._call_claude(topic, brand_name, brand_brief, tone)
 
         script = Script(
@@ -51,7 +66,9 @@ class ScriptService:
         db.commit()
         db.refresh(script)
 
-        return self._format_output(script)
+        res = self._format_output(script)
+        res["cached"] = False
+        return res
 
     def get_history(self, db: Session, creator_id: str, limit: int = 20) -> List[dict]:
         scripts = (

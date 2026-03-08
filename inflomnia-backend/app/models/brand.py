@@ -16,6 +16,7 @@ class Brand(Base):
     content_niches = Column(String, nullable=True)    # comma-separated match niches
     budget_range_min = Column(Float, nullable=True)
     budget_range_max = Column(Float, nullable=True)
+    is_ai_discovered = Column(String, default="false") # Store as string for SQLite compatibility in this setup or Boolean
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

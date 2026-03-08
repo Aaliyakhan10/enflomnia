@@ -10,3 +10,4 @@ from app.models.brand_match import BrandMatch  # noqa: F401
 # Instagram
 from app.models.instagram_account import InstagramAccount  # noqa: F401
 from app.models.reel import Reel  # noqa: F401
+from app.models.ai_insight import AIInsight  # noqa: F401

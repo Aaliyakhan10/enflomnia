@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.integrations.gemini_client import GeminiClient
 from app.models.reel import Reel
 from app.models.instagram_account import InstagramAccount
+from app.models.ai_insight import AIInsight
 
 
 class PredictionService:
@@ -23,6 +24,13 @@ class PredictionService:
 
     def generate_content_suggestions(self, db: Session, creator_id: str) -> List[Dict[str, Any]]:
         """Suggests 3 new formats/topics based on recent top-performing reels."""
+        # ── Check Cache ──
+        cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == "suggestions").first()
+        if cached:
+            delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
+            if delta < timedelta(hours=24):
+                return cached.content
+
         account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
         follower_count = account.followers_count if account else 0
         niche = "general" # Can be updated if we add niche to the IG account model
@@ -38,7 +46,7 @@ class PredictionService:
         reels.sort(key=lambda x: x.total_interactions or 0, reverse=True)
         top_reels = reels[:5]
 
-        context_str = "\n".join([f"- Captions: '{r.caption[:50]}...', Reach: {r.reach}, Interactions: {r.total_interactions}" for r in top_reels])
+        context_str = "\n".join([f"- Captions: '{(r.caption or '')[:50]}...', Reach: {r.reach}, Interactions: {r.total_interactions}" for r in top_reels])
         
         prompt = f"""You are an elite Instagram growth strategist. 
 The creator is in the '{niche}' niche with {follower_count} followers.
@@ -58,12 +66,29 @@ Return ONLY valid JSON with no markdown formatting. The format must be a list of
     "hook_idea": "A 1-sentence opening hook (max 15 words) using a strong psychological trigger."
   }}
 ]"""
-        return self.bedrock.invoke_model_json(prompt)
+        result = self.bedrock.invoke_model_json(prompt)
+        
+        # Update Cache
+        if not cached:
+            cached = AIInsight(creator_id=creator_id, insight_type="suggestions")
+            db.add(cached)
+        cached.content = result
+        db.commit()
+        
+        return result
 
     # ── 2. Reel Feedback ────────────────────────────────────────────────────
 
     def analyze_reel_feedback(self, db: Session, creator_id: str, reel_id: str) -> Dict[str, str]:
         """Provides actionable feedback for a specific reel's performance."""
+        # ── Check Cache ──
+        cache_key = f"reel_feedback_{reel_id}"
+        cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == cache_key).first()
+        if cached:
+            delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
+            if delta < timedelta(hours=24):
+                return cached.content
+
         reel = db.query(Reel).filter(Reel.id == reel_id, Reel.creator_id == creator_id).first()
         if not reel:
             return {"error": "Reel not found"}
@@ -84,12 +109,29 @@ Return ONLY valid JSON:
   "what_to_improve": "1 sentence on a specific weakness (e.g., low watch time indicates a weak hook or slow pacing)",
   "next_iteration": "1 highly specific, actionable editing or scripting idea to test in the next video to fix the weakness"
 }}"""
-        return self.bedrock.invoke_model_json(prompt)
+        result = self.bedrock.invoke_model_json(prompt)
+
+        # Update Cache
+        if not cached:
+            cached = AIInsight(creator_id=creator_id, insight_type=cache_key)
+            db.add(cached)
+        cached.content = result
+        db.commit()
+
+        return result
 
     # ── 3. Competitors & Trends ─────────────────────────────────────────────
 
     def find_competitors_and_trends(self, db: Session, creator_id: str, niche: str) -> Dict[str, Any]:
         """Simulates finding competitors and identifying emerging trends."""
+        # ── Check Cache ──
+        cache_key = f"trends_{niche}"
+        cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == cache_key).first()
+        if cached:
+            delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
+            if delta < timedelta(hours=24):
+                return cached.content
+
         account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
         follower_count = account.followers_count if account else 0
         
@@ -111,12 +153,28 @@ Return ONLY valid JSON:
     {{"trend_name": "Trend 2", "description": "Actionable explanation of how to execute this trend right now."}}
   ]
 }}"""
-        return self.bedrock.invoke_model_json(prompt)
+        result = self.bedrock.invoke_model_json(prompt)
+
+        # Update Cache
+        if not cached:
+            cached = AIInsight(creator_id=creator_id, insight_type=cache_key)
+            db.add(cached)
+        cached.content = result
+        db.commit()
+
+        return result
 
     # ── 4. Growth Simulation ────────────────────────────────────────────────
 
     def simulate_growth(self, db: Session, creator_id: str) -> Dict[str, Any]:
         """Projects 3, 6, and 12-month follower/reach trajectories & pivot strategies."""
+        # ── Check Cache ──
+        cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == "growth_simulation").first()
+        if cached:
+            delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
+            if delta < timedelta(hours=24):
+                return cached.content
+
         account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
         current_followers = account.followers_count if account else 0
         niche = "general"
@@ -145,6 +203,14 @@ Return ONLY valid JSON:
         # Ensure numbers make sense
         if not parsed.get("projections"):
             raise ValueError("No projections returned by model")
+        
+        # Update Cache
+        if not cached:
+            cached = AIInsight(creator_id=creator_id, insight_type="growth_simulation")
+            db.add(cached)
+        cached.content = parsed
+        db.commit()
+
         return parsed
 
     # ── Helpers ─────────────────────────────────────────────────────────────

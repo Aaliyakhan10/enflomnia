@@ -62,7 +62,40 @@ class MatchingService:
         audience_description: Optional[str] = None,
     ) -> List[dict]:
         """Score all brands against creator profile and return top matches with Claude reasoning."""
+        # ── 0. Check Cache ──
+        existing_matches = db.query(BrandMatch).filter(
+            BrandMatch.creator_id == creator_id,
+            BrandMatch.status == "pending"
+        ).order_by(BrandMatch.created_at.desc()).all()
+        
+        if existing_matches:
+            # Check freshness of the first match
+            delta = datetime.now() - existing_matches[0].created_at
+            if delta.total_seconds() < 24 * 3600:
+                results = []
+                for m in existing_matches:
+                    brand = db.query(Brand).filter(Brand.id == m.brand_id).first()
+                    results.append({
+                        "id": m.id,
+                        "brand_id": m.brand_id,
+                        "brand_name": brand.name if brand else "Unknown",
+                        "brand_industry": brand.industry if brand else "",
+                        "relevance_score": m.relevance_score,
+                        "niche_match": m.niche_match,
+                        "audience_overlap": m.audience_overlap,
+                        "fit_reasoning": m.fit_reasoning,
+                        "budget_range_min": brand.budget_range_min if brand else None,
+                        "budget_range_max": brand.budget_range_max if brand else None,
+                        "status": m.status,
+                        "created_at": m.created_at,
+                        "cached": True
+                    })
+                return results
+
         self._seed_mock_brands_if_empty(db)
+        # ── 1. Discover New Brands via AI if needed ──
+        self._discover_external_brands(db, niche)
+
         brands = db.query(Brand).all()
         if not brands:
             return []
@@ -77,9 +110,9 @@ class MatchingService:
             overall          = round((niche_score * 0.4 + audience_score * 0.35 + budget_score * 0.25), 3)
             scored.append((overall, niche_score, audience_score, brand))
 
-        # Sort by score descending, take top 5
+        # Sort by score descending, take top 6 (to show a variety including discovered ones)
         scored.sort(key=lambda x: x[0], reverse=True)
-        top5 = scored[:5]
+        top_matches = scored[:6]
 
         # Clear existing pending matches for this creator
         db.query(BrandMatch).filter(
@@ -88,15 +121,16 @@ class MatchingService:
         ).delete()
 
         results = []
-        for overall, niche_score, audience_score, brand in top5:
+        for overall, niche_score, audience_score, brand in top_matches:
             reasoning = self._get_claude_reasoning(
                 creator_niche=niche, platform=platform,
                 follower_count=follower_count, engagement_rate=engagement_rate,
                 brand_name=brand.name, brand_industry=brand.industry,
                 target_audience=brand.target_audience, relevance_score=overall,
             )
+            match_id = str(uuid.uuid4())
             match = BrandMatch(
-                id=str(uuid.uuid4()),
+                id=match_id,
                 creator_id=creator_id,
                 brand_id=brand.id,
                 relevance_score=overall,
@@ -107,7 +141,7 @@ class MatchingService:
             )
             db.add(match)
             results.append({
-                "id": match.id,
+                "id": match_id,
                 "brand_id": brand.id,
                 "brand_name": brand.name,
                 "brand_industry": brand.industry,
@@ -119,10 +153,54 @@ class MatchingService:
                 "budget_range_max": brand.budget_range_max,
                 "status": "pending",
                 "created_at": datetime.utcnow(),
+                "cached": False,
+                "is_ai_discovered": brand.is_ai_discovered == "true"
             })
 
         db.commit()
         return results
+
+    def _discover_external_brands(self, db: Session, niche: str):
+        """Brainstorm 3 real-world big brands for the niche using AI if not already discovered."""
+        # Only discover if we don't have many AI discovered brands for this niche
+        discovered_count = db.query(Brand).filter(Brand.industry == niche, Brand.is_ai_discovered == "true").count()
+        if discovered_count >= 3:
+            return
+
+        prompt = f"""Brainstorm exactly 3 real-world popular brands that frequently partner with creators in the '{niche}' niche.
+For each brand, provide a realistic target audience and content niches they look for.
+
+Return ONLY valid JSON as a list of objects:
+[
+  {{
+    "name": "Brand Name",
+    "industry": "{niche}",
+    "target_audience": "Short description of who they target",
+    "content_niches": "comma, separated, niches",
+    "budget_range_min": 1000,
+    "budget_range_max": 10000
+  }}
+]"""
+        try:
+            new_brands_data = self.bedrock.invoke_model_json(prompt)
+            for b_data in new_brands_data:
+                # Check if brand already exists by name
+                exists = db.query(Brand).filter(Brand.name == b_data["name"]).first()
+                if not exists:
+                    brand = Brand(
+                        id=str(uuid.uuid4()),
+                        name=b_data["name"],
+                        industry=b_data["industry"],
+                        target_audience=b_data["target_audience"],
+                        content_niches=b_data["content_niches"],
+                        budget_range_min=b_data.get("budget_range_min"),
+                        budget_range_max=b_data.get("budget_range_max"),
+                        is_ai_discovered="true"
+                    )
+                    db.add(brand)
+            db.commit()
+        except:
+            pass # Fail gracefully if AI discovery fails
 
     def get_matches(self, db: Session, creator_id: str) -> List[dict]:
         matches = (

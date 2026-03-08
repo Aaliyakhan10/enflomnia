@@ -230,6 +230,11 @@ export default function MatchingPage() {
                                                 <h3 className="text-lg font-black text-gray-900 tracking-tight leading-none mb-1.5">{m.brand_name}</h3>
                                                 <div className="flex items-center gap-2">
                                                     <span className="px-2 py-0.5 rounded-md bg-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{m.brand_industry}</span>
+                                                    {m.is_ai_discovered && (
+                                                        <span className="px-2 py-0.5 rounded-md bg-violet-50 text-[10px] font-bold text-violet-600 uppercase tracking-widest flex items-center gap-1">
+                                                            <Sparkles size={8} /> AI Discovered
+                                                        </span>
+                                                    )}
                                                     {m.budget_range_max && (
                                                         <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">💰 Up to ${m.budget_range_max.toLocaleString()}</span>
                                                     )}

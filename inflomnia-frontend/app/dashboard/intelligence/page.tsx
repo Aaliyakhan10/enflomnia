@@ -6,7 +6,7 @@ import {
     PieChart, Clock, CheckCircle2, Star,
     Layout, Filter, BarChart3, ArrowUpRight
 } from "lucide-react";
-import { intelligenceApi } from "@/lib/api";
+import { intelligenceApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
 
@@ -26,7 +26,7 @@ function InsightCard({ icon: Icon, title, description, color, bg }: { icon: any;
 }
 
 export default function ContentIntelligencePage() {
-    const [data, setData] = useState<any>(null);
+    const [data, setData] = useState<any>({ suggestions: [], trends: {}, growth: {}, insights: {} });
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
     const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null);
@@ -38,10 +38,18 @@ export default function ContentIntelligencePage() {
     async function fetchData() {
         setLoading(true);
         try {
-            // Fetch stored suggestions - backend already returns last stored if available
-            const res = await intelligenceApi.getSuggestions(CREATOR_ID);
-            setData(res.data);
-            // Simulate a 'last analyzed' time if not provided by backend
+            const [sugRes, trendRes, growthRes, insightRes] = await Promise.all([
+                intelligenceApi.getSuggestions(CREATOR_ID),
+                intelligenceApi.getCompetitorsAndTrends(CREATOR_ID),
+                intelligenceApi.simulateGrowth(CREATOR_ID),
+                instagramApi.analyzeReels(CREATOR_ID)
+            ]);
+            setData({
+                suggestions: sugRes.data || [],
+                trends: trendRes.data || {},
+                growth: growthRes.data || {},
+                insights: insightRes.data || {}
+            });
             setLastAnalyzed(new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
         } catch { }
         setLoading(false);
@@ -50,9 +58,7 @@ export default function ContentIntelligencePage() {
     async function handleAnalyze() {
         setAnalyzing(true);
         try {
-            const res = await intelligenceApi.getSuggestions(CREATOR_ID);
-            setData(res.data);
-            setLastAnalyzed(new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }));
+            await fetchData();
         } catch { }
         setAnalyzing(false);
     }
@@ -106,12 +112,12 @@ export default function ContentIntelligencePage() {
                                     <TrendingUp size={12} /> 30-Day Growth Forecast
                                 </h3>
                                 <div className="text-4xl font-black tracking-tighter mb-1">
-                                    +{data.projected_growth_followers?.toLocaleString() || "1,240"}
+                                    +{data.growth.projections?.[0]?.projected_followers?.toLocaleString() || "1,240"}
                                 </div>
                                 <p className="text-xs text-violet-100/80 font-medium">Predicted New Followers</p>
 
                                 <div className="mt-8 p-3 rounded-xl bg-black/10 border border-white/10 text-xs text-violet-50 leading-relaxed italic font-medium">
-                                    &ldquo;Your current reel retention is up 12% — maintaining this pace will trigger the explore algorithm.&rdquo;
+                                    &ldquo;{data.growth.strategic_pivot || "Your current reel retention is up 12% — maintaining this pace will trigger the explore algorithm."}&rdquo;
                                 </div>
                             </div>
                         </div>
@@ -125,12 +131,20 @@ export default function ContentIntelligencePage() {
                                 <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Trending Niches</h3>
                             </div>
                             <div className="space-y-3">
-                                {(data.trending_niches || ["Micro-vlogging", "POV Narratives", "Visual Storytelling"]).map((niche: string, i: number) => (
+                                {(data.trends.emerging_trends || []).map((trend: any, i: number) => (
                                     <div key={i} className="flex items-center justify-between group cursor-pointer">
-                                        <span className="text-sm font-bold text-gray-700 group-hover:text-violet-600 transition-colors">{niche}</span>
+                                        <span className="text-sm font-bold text-gray-700 group-hover:text-violet-600 transition-colors">{trend.trend_name}</span>
                                         <ArrowUpRight size={14} className="text-gray-300 group-hover:text-violet-400 group-hover:translate-x-0.5 transition-all" />
                                     </div>
                                 ))}
+                                {(!data.trends.emerging_trends || data.trends.emerging_trends.length === 0) && (
+                                    ["Micro-vlogging", "POV Narratives", "Visual Storytelling"].map((niche: string, i: number) => (
+                                        <div key={i} className="flex items-center justify-between group cursor-pointer">
+                                            <span className="text-sm font-bold text-gray-700 group-hover:text-violet-600 transition-colors">{niche}</span>
+                                            <ArrowUpRight size={14} className="text-gray-300 group-hover:text-violet-400 group-hover:translate-x-0.5 transition-all" />
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
@@ -142,14 +156,14 @@ export default function ContentIntelligencePage() {
                             <InsightCard
                                 icon={Star}
                                 title="Best Content Pillar"
-                                description={data.top_performing_pillar || "Strategic lifestyle reels featuring high-contrast visual hooks."}
+                                description={data.insights.top_performing || "Strategic lifestyle reels featuring high-contrast visual hooks."}
                                 color="#f59e0b"
                                 bg="#fef3c7"
                             />
                             <InsightCard
                                 icon={Zap}
                                 title="Engagement Catalyst"
-                                description={data.engagement_driver || "Direct question overlays in the first 2 seconds of every video."}
+                                description={data.insights.recommended_posting_style || "Direct question overlays in the first 2 seconds of every video."}
                                 color="#10b981"
                                 bg="#d1fae5"
                             />
@@ -162,17 +176,20 @@ export default function ContentIntelligencePage() {
                                 {(data.suggestions || []).map((s: any, i: number) => (
                                     <div key={i} className="card group hover:shadow-xl transition-all duration-300 border-gray-100 flex gap-5 py-5">
                                         <div className="w-10 h-10 rounded-2xl bg-gray-50 text-gray-300 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors shadow-none border border-gray-50">
-                                            {s.type === 'hook' ? <Target size={20} /> : <MessageSquare size={20} />}
+                                            <Target size={20} />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center justify-between mb-1.5">
-                                                <span className="text-[10px] font-black uppercase tracking-widest text-violet-500">{s.type || "Content Tip"}</span>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-violet-500">{s.format || "Content Tip"}</span>
                                                 <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-[9px] font-bold text-emerald-600 border border-emerald-100 shadow-sm">
                                                     <Sparkles size={8} /> High Impact
                                                 </div>
                                             </div>
                                             <h4 className="text-base font-bold text-gray-900 mb-2 leading-tight">{s.title || "Viral Format Strategy"}</h4>
-                                            <p className="text-sm text-gray-500 leading-relaxed font-medium">{s.description || "Incorporate more fast-paced transitions in the first 5 seconds to boost average watch time."}</p>
+                                            <p className="text-sm text-gray-500 leading-relaxed font-medium mb-2">{s.rationale}</p>
+                                            <div className="p-2.5 rounded-lg bg-violet-50 text-[11px] font-medium text-violet-700 italic border border-violet-100">
+                                                &ldquo;{s.hook_idea}&rdquo;
+                                            </div>
                                         </div>
                                     </div>
                                 ))}

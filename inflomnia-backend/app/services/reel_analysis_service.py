@@ -127,10 +127,26 @@ class ReelAnalysisService:
         """
         Send top reels to Claude 3.5 for a holistic performance analysis.
         Returns: per-reel scores + overall insights + recommended style.
+        Caches results for 24 hours.
         """
-        reels = self.get_reels(db, creator_id)
         account = self._get_account_or_raise(db, creator_id)
+        
+        # ── Check Cache ──
+        if account.insights_last_generated_at:
+            delta = datetime.now(timezone.utc) - account.insights_last_generated_at.replace(tzinfo=timezone.utc)
+            if delta < timedelta(hours=24):
+                reels = self.get_reels(db, creator_id)
+                top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:10]
+                return {
+                    "account": account,
+                    "reels": top_reels,
+                    "overall_insights": account.overall_insights,
+                    "top_performing": account.top_performing_pattern,
+                    "recommended_posting_style": account.recommended_posting_style,
+                    "cached": True
+                }
 
+        reels = self.get_reels(db, creator_id)
         if not reels:
             return {"error": "No reels found. Sync first."}
 
@@ -179,14 +195,22 @@ Be highly specific, data-driven, and actionable. Avoid generic advice like 'make
                 reel = top_reels[idx]
                 reel.hook_quality_score = s.get("hook_quality")
                 reel.analysis_summary = s.get("analysis")
+
+        # Update Account Cache
+        account.overall_insights = result.get("overall_insights", "")
+        account.top_performing_pattern = result.get("top_performing_pattern", "")
+        account.recommended_posting_style = result.get("recommended_posting_style", "")
+        account.insights_last_generated_at = datetime.now(timezone.utc)
+        
         db.commit()
 
         return {
             "account": account,
             "reels": top_reels,
-            "overall_insights": result.get("overall_insights", ""),
-            "top_performing": result.get("top_performing_pattern"),
-            "recommended_posting_style": result.get("recommended_posting_style"),
+            "overall_insights": account.overall_insights,
+            "top_performing": account.top_performing_pattern,
+            "recommended_posting_style": account.recommended_posting_style,
+            "cached": False
         }
 
     # ── Helpers ──────────────────────────────────────────────────────────────

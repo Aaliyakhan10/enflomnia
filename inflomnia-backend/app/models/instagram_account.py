@@ -20,3 +20,9 @@ class InstagramAccount(Base):
     access_token = Column(Text, nullable=False)     # stored in DB for re-use
     connected_at = Column(DateTime(timezone=True), server_default=func.now())
     last_synced_at = Column(DateTime(timezone=True), nullable=True)
+
+    # ── AI Analysis Cache ──
+    overall_insights = Column(Text, nullable=True)
+    top_performing_pattern = Column(Text, nullable=True)
+    recommended_posting_style = Column(Text, nullable=True)
+    insights_last_generated_at = Column(DateTime(timezone=True), nullable=True)

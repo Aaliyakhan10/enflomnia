@@ -72,7 +72,35 @@ class PricingService:
         brand_industry: Optional[str] = None,
         offered_price: Optional[float] = None,
     ) -> dict:
-        """Main entry point: compute price range and persist."""
+        # ── 0. Check Cache ──
+        existing = db.query(BrandDeal).filter(
+            BrandDeal.creator_id == creator_id,
+            BrandDeal.platform == platform,
+            BrandDeal.deliverable_type == deliverable_type,
+            BrandDeal.follower_count == follower_count,
+            BrandDeal.niche == niche,
+            BrandDeal.brand_name == brand_name
+        ).order_by(BrandDeal.created_at.desc()).first()
+        
+        if existing:
+            delta = datetime.now() - existing.created_at
+            if delta.total_seconds() < 24 * 3600:
+                # Reuse existing reasoning and prices
+                return {
+                    "creator_id": creator_id,
+                    "platform": platform,
+                    "deliverable_type": deliverable_type,
+                    "suggested_price_min": existing.suggested_price_min,
+                    "suggested_price_max": existing.suggested_price_max,
+                    "recommended_price": existing.recommended_price,
+                    "offered_price": offered_price,
+                    "deal_verdict": self._get_verdict(offered_price, existing.suggested_price_min, existing.suggested_price_max),
+                    "reasoning": existing.reasoning,
+                    "confidence": existing.confidence,
+                    "created_at": existing.created_at,
+                    "cached": True
+                }
+
         # 1. Formula-based estimate
         min_p, max_p, rec_p = self._formula_estimate(
             platform, deliverable_type, follower_count, engagement_rate, niche
@@ -90,19 +118,7 @@ class PricingService:
             niche, min_p, max_p, rec_p, offered_price
         )
 
-        # 4. Deal verdict if offered price provided
-        deal_verdict = None
-        if offered_price:
-            if offered_price < min_p * 0.8:
-                deal_verdict = "low"
-            elif offered_price < min_p:
-                deal_verdict = "below_range"
-            elif offered_price <= max_p:
-                deal_verdict = "fair"
-            else:
-                deal_verdict = "great"
-
-        # 5. Persist
+        # 4. Persist
         deal = BrandDeal(
             id=str(uuid.uuid4()),
             creator_id=creator_id,
@@ -137,11 +153,24 @@ class PricingService:
             "suggested_price_max": round(max_p, 2),
             "recommended_price": round(rec_p, 2),
             "offered_price": offered_price,
-            "deal_verdict": deal_verdict,
+            "deal_verdict": self._get_verdict(offered_price, min_p, max_p),
             "reasoning": reasoning,
             "confidence": deal.confidence,
             "created_at": deal.created_at or datetime.utcnow(),
+            "cached": False
         }
+
+    def _get_verdict(self, offered_price: Optional[float], min_p: float, max_p: float) -> Optional[str]:
+        if not offered_price:
+            return None
+        if offered_price < min_p * 0.8:
+            return "low"
+        elif offered_price < min_p:
+            return "below_range"
+        elif offered_price <= max_p:
+            return "fair"
+        else:
+            return "great"
 
     def get_history(self, db: Session, creator_id: str, limit: int = 20) -> dict:
         items = (

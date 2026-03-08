@@ -5,6 +5,7 @@ import {
     Clock, CheckCircle2, Trash2, Calendar as CalendarIcon,
     ChevronRight, ArrowRight, Video, MessageSquare
 } from "lucide-react";
+import Link from "next/link";
 import { schedulerApi } from "@/lib/api";
 import { format, parseISO, isPast } from "date-fns";
 
@@ -146,9 +147,9 @@ export default function SchedulerPage() {
                                                 {item.status}
                                             </span>
                                         </div>
-                                        <button className="text-[9px] font-bold uppercase tracking-widest text-violet-600 flex items-center gap-1 group/link">
+                                        <Link href={`/dashboard/accelerator/scripts?topic=${encodeURIComponent(item.topic || "")}`} className="text-[9px] font-bold uppercase tracking-widest text-violet-600 flex items-center gap-1 group/link">
                                             View Prep <ArrowRight size={10} className="group-hover/link:translate-x-0.5 transition-transform" />
-                                        </button>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

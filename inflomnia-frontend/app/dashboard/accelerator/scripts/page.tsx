@@ -5,6 +5,7 @@ import {
     Play, Sparkles, MessageSquare, Zap, Clock,
     Video, Layout, List
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { scriptsApi, instagramApi } from "@/lib/api";
 
 const CREATOR_ID = "demo-creator-001";
@@ -27,6 +28,7 @@ export default function ScriptsPage() {
     const [form, setForm] = useState({
         topic: "", brand_name: "", brand_brief: "", tone: "entertaining", reel_id: "",
     });
+    const searchParams = useSearchParams();
     const [reels, setReels] = useState<any[]>([]);
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -35,11 +37,21 @@ export default function ScriptsPage() {
         instagramApi.getReels(CREATOR_ID).then(res => setReels(res.data)).catch(() => { });
     }, []);
 
-    async function handleAutoGenerate() {
+    useEffect(() => {
+        const topicParam = searchParams.get("topic");
+        if (topicParam) {
+            setForm(f => ({ ...f, topic: topicParam }));
+            // Trigger generation with this topic
+            handleAutoGenerate(topicParam);
+        }
+    }, [searchParams]);
+
+    async function handleAutoGenerate(manualTopic?: string) {
         setLoading(true);
         try {
             const res = await scriptsApi.generate({
                 creator_id: CREATOR_ID,
+                topic: manualTopic || form.topic,
                 tone: form.tone,
             });
             setResult(res.data);
@@ -60,7 +72,7 @@ export default function ScriptsPage() {
                         Inflomnia AI drafts high-converting scripts based on your unique voice and current trending formats.
                     </p>
                 </div>
-                <button onClick={handleAutoGenerate} disabled={loading}
+                <button onClick={() => handleAutoGenerate()} disabled={loading}
                     className="btn btn-brand gap-2 px-5 py-2.5 shadow-md shadow-amber-500/20"
                     style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}>
                     {loading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
