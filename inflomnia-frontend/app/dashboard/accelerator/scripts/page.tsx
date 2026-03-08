@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import {
     ScrollText, Copy, Check, Loader2, ChevronRight,
     Play, Sparkles, MessageSquare, Zap, Clock,
@@ -24,7 +24,7 @@ function CopyButton({ text }: { text: string }) {
     );
 }
 
-export default function ScriptsPage() {
+function ScriptsContent() {
     const [form, setForm] = useState({
         topic: "", brand_name: "", brand_brief: "", tone: "entertaining", reel_id: "",
     });
@@ -212,5 +212,17 @@ export default function ScriptsPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function ScriptsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="animate-spin text-amber-500" size={32} />
+            </div>
+        }>
+            <ScriptsContent />
+        </Suspense>
     );
 }
