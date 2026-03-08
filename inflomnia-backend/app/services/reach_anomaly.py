@@ -168,6 +168,17 @@ class ReachAnomalyService:
                 "reasoning": f"Reach is within normal range. Drop of {drop_pct:.1%} is below threshold.",
             }
 
+        # Check if we already computed this anomaly for the latest reel
+        if reels[0].anomaly_reasoning and reels[0].anomaly_type != "none":
+            return {
+                "anomaly_type": reels[0].anomaly_type,
+                "confidence": round(reels[0].anomaly_confidence or min(0.95, drop_pct), 3),
+                "drop_percentage": round(drop_pct * 100, 1),
+                "baseline_reach": int(baseline),
+                "current_reach": latest,
+                "reasoning": reels[0].anomaly_reasoning,
+            }
+
         # Large drop detected — check if platform-wide
         similar_creators = self._get_recent_similar_creators(db, creator_id)
         platform_wide = self._detect_platform_wide(db, similar_creators)

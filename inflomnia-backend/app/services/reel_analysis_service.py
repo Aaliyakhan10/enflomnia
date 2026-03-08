@@ -39,9 +39,26 @@ class ReelAnalysisService:
         me = client.get_me()
 
         account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+        
+        # If the account previously used a mock token, purge ALL mock data so real data isn't mixed in.
+        is_upgrading_from_mock = account and account.access_token and account.access_token.startswith("mock")
         if not account:
             account = InstagramAccount(id=str(uuid.uuid4()), creator_id=creator_id)
             db.add(account)
+        elif is_upgrading_from_mock:
+            # Delete mock reels
+            db.query(Reel).filter(Reel.creator_id == creator_id).delete()
+            # Also delete mock reach snapshots (if any)
+            try:
+                from app.models.reach_snapshot import ReachSnapshot
+                db.query(ReachSnapshot).filter(ReachSnapshot.creator_id == creator_id).delete()
+            except Exception: pass
+            
+            # Also clear insights cache
+            account.overall_insights = None
+            account.top_performing_pattern = None
+            account.recommended_posting_style = None
+            account.insights_last_generated_at = None
 
         account.ig_user_id = me["id"]
         account.username = me.get("username")

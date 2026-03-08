@@ -40,42 +40,71 @@ class CommentShieldService:
         """
         comments = comments[:20]  # Hard cap per Bedrock Agent limit
 
-        # Archive raw batch to S3 for audit trail
-        self.s3.archive_comments(creator_id, comments)
-
         # Try Bedrock Agent first, fall back to direct classification
-        results = []
-        if self.agent.agent_id and self.agent.agent_alias_id:
-            results = self._classify_via_agent(creator_id, comments)
-        else:
-            results = self._classify_direct(comments)
-
-        # Persist to DB
         saved = []
-        for item in results:
-            comment = Comment(
-                creator_id=creator_id,
-                ig_media_id=item.get("ig_media_id"),
-                platform=item.get("platform", "instagram"),
-                content=item["content"],
-                author=item.get("author", "unknown"),
-                category=item["category"],
-                confidence=item["confidence"],
-                engagement_score=item.get("engagement_score", 0.0),
-            )
-            db.add(comment)
-            db.commit()
-            db.refresh(comment)
-            saved.append({
-                "id": comment.id,
-                "content": comment.content,
-                "author": comment.author,
-                "category": comment.category,
-                "confidence": comment.confidence,
-                "engagement_score": comment.engagement_score,
-                "ig_media_id": comment.ig_media_id,
-                "creator_feedback": None,
-            })
+        to_analyze = []
+
+        for item in comments:
+            content = item.get("content", "")
+            author = item.get("author", "unknown")
+            media_id = item.get("ig_media_id")
+
+            # Check if this comment already exists for this creator/post
+            existing = db.query(Comment).filter(
+                Comment.creator_id == creator_id,
+                Comment.content == content,
+                Comment.author == author,
+                Comment.ig_media_id == media_id
+            ).first()
+
+            if existing:
+                saved.append({
+                    "id": existing.id,
+                    "content": existing.content,
+                    "author": existing.author,
+                    "category": existing.category,
+                    "confidence": existing.confidence,
+                    "engagement_score": existing.engagement_score,
+                    "ig_media_id": existing.ig_media_id,
+                    "creator_feedback": existing.creator_feedback,
+                })
+            else:
+                to_analyze.append(item)
+
+        # Archive raw batch to S3 for audit trail (only the new ones)
+        if to_analyze:
+            self.s3.archive_comments(creator_id, to_analyze)
+
+            if self.agent.agent_id and self.agent.agent_alias_id:
+                results = self._classify_via_agent(creator_id, to_analyze)
+            else:
+                results = self._classify_direct(to_analyze)
+
+            # Persist to DB
+            for item in results:
+                comment = Comment(
+                    creator_id=creator_id,
+                    ig_media_id=item.get("ig_media_id"),
+                    platform=item.get("platform", "instagram"),
+                    content=item["content"],
+                    author=item.get("author", "unknown"),
+                    category=item["category"],
+                    confidence=item["confidence"],
+                    engagement_score=item.get("engagement_score", 0.0),
+                )
+                db.add(comment)
+                db.commit()
+                db.refresh(comment)
+                saved.append({
+                    "id": comment.id,
+                    "content": comment.content,
+                    "author": comment.author,
+                    "category": comment.category,
+                    "confidence": comment.confidence,
+                    "engagement_score": comment.engagement_score,
+                    "ig_media_id": comment.ig_media_id,
+                    "creator_feedback": None,
+                })
 
         return saved
 

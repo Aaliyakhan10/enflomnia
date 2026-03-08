@@ -7,11 +7,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { schedulerApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 import { format, parseISO, isPast } from "date-fns";
 
-const CREATOR_ID = "demo-creator-001";
 
 export default function SchedulerPage() {
+    const { creatorId } = useAccount();
     const [schedule, setSchedule] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
@@ -23,7 +24,7 @@ export default function SchedulerPage() {
     async function fetchSchedule() {
         setLoading(true);
         try {
-            const res = await schedulerApi.getSchedule(CREATOR_ID);
+            const res = await schedulerApi.getSchedule(creatorId);
             setSchedule(res.data);
         } catch (err) { }
         setLoading(false);
@@ -32,7 +33,7 @@ export default function SchedulerPage() {
     async function handleGeneratePlan() {
         setGenerating(true);
         try {
-            await schedulerApi.generateSmartPlan(CREATOR_ID, 7);
+            await schedulerApi.generateSmartPlan(creatorId, 7);
             await fetchSchedule();
         } catch (err) { }
         setGenerating(false);
@@ -40,7 +41,7 @@ export default function SchedulerPage() {
 
     async function handleDelete(id: string) {
         try {
-            await schedulerApi.deleteItem(CREATOR_ID, id);
+            await schedulerApi.deleteItem(creatorId, id);
             setSchedule(s => s.filter(item => item.id !== id));
         } catch (err) { }
     }
@@ -142,7 +143,7 @@ export default function SchedulerPage() {
 
                                     <div className="mt-6 pt-4 border-t border-gray-50 flex items-center justify-between">
                                         <div className="flex items-center gap-1.5">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'suggested' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-300'}`} />
+                                            <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'suggested' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'}`} />
                                             <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">
                                                 {item.status}
                                             </span>
@@ -158,10 +159,10 @@ export default function SchedulerPage() {
 
                     {/* Add manual slot card */}
                     <button className="card border-dashed border-2 bg-transparent flex flex-col items-center justify-center py-10 group hover:border-violet-200 transition-all">
-                        <div className="w-10 h-10 rounded-full bg-gray-50 text-gray-300 flex items-center justify-center mb-3 group-hover:bg-violet-50 group-hover:text-violet-400 transition-all">
+                        <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-3 group-hover:bg-violet-50 group-hover:text-violet-400 transition-all">
                             <Plus size={20} />
                         </div>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest group-hover:text-violet-500">Manual Slot</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-violet-500">Manual Slot</span>
                     </button>
                 </div>
             )}

@@ -2,13 +2,13 @@
 import { useState, useEffect, Suspense } from "react";
 import {
     ScrollText, Copy, Check, Loader2, ChevronRight,
-    Play, Sparkles, MessageSquare, Zap, Clock,
-    Video, Layout, List
+    Sparkles, MessageSquare, Zap, Clock,
+    Video, Layout, List, History, ChevronDown
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { scriptsApi, instagramApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);
@@ -25,6 +25,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function ScriptsContent() {
+    const { creatorId } = useAccount();
     const [form, setForm] = useState({
         topic: "", brand_name: "", brand_brief: "", tone: "entertaining", reel_id: "",
     });
@@ -32,29 +33,43 @@ function ScriptsContent() {
     const [reels, setReels] = useState<any[]>([]);
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [history, setHistory] = useState<any[]>([]);
+    const [historyOpen, setHistoryOpen] = useState(false);
+    const [loadingHistory, setLoadingHistory] = useState(false);
 
     useEffect(() => {
-        instagramApi.getReels(CREATOR_ID).then(res => setReels(res.data)).catch(() => { });
+        instagramApi.getReels(creatorId).then(res => setReels(res.data)).catch(() => { });
+        loadHistory();
     }, []);
 
     useEffect(() => {
         const topicParam = searchParams.get("topic");
         if (topicParam) {
             setForm(f => ({ ...f, topic: topicParam }));
-            // Trigger generation with this topic
             handleAutoGenerate(topicParam);
         }
     }, [searchParams]);
+
+    async function loadHistory() {
+        setLoadingHistory(true);
+        try {
+            const res = await scriptsApi.getHistory(creatorId);
+            setHistory(res.data || []);
+        } catch { }
+        setLoadingHistory(false);
+    }
 
     async function handleAutoGenerate(manualTopic?: string) {
         setLoading(true);
         try {
             const res = await scriptsApi.generate({
-                creator_id: CREATOR_ID,
+                creator_id: creatorId,
                 topic: manualTopic || form.topic,
                 tone: form.tone,
             });
             setResult(res.data);
+            // Refresh history after generating
+            loadHistory();
         } catch { }
         setLoading(false);
     }
@@ -79,6 +94,54 @@ function ScriptsContent() {
                     {loading ? "Drafting script..." : "Auto-Draw My Next Script"}
                 </button>
             </div>
+
+            {/* History accordion */}
+            {history.length > 0 && (
+                <div className="card shadow-sm border-amber-100/50">
+                    <button
+                        onClick={() => setHistoryOpen(h => !h)}
+                        className="w-full flex items-center justify-between text-left"
+                    >
+                        <div className="flex items-center gap-2">
+                            <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                                <History size={14} />
+                            </div>
+                            <span className="text-xs font-black text-gray-500 uppercase tracking-widest">
+                                Saved Scripts ({history.length})
+                            </span>
+                        </div>
+                        <ChevronDown
+                            size={16}
+                            className={`text-gray-400 transition-transform ${historyOpen ? "rotate-180" : ""}`}
+                        />
+                    </button>
+
+                    {historyOpen && (
+                        <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
+                            {history.map((s: any) => (
+                                <button
+                                    key={s.id}
+                                    onClick={() => setResult(s)}
+                                    className="w-full text-left flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-amber-50 border border-gray-100 hover:border-amber-200 transition-all group"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-gray-800 truncate">{s.topic}</p>
+                                        <div className="flex items-center gap-3 mt-0.5">
+                                            <span className="text-[10px] text-gray-400 font-medium capitalize">{s.tone}</span>
+                                            {s.created_at && (
+                                                <span className="text-[10px] text-gray-400">
+                                                    {new Date(s.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <ChevronRight size={12} className="text-gray-300 group-hover:text-amber-500 flex-shrink-0 ml-2 transition-colors" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 {/* Brief Side */}
@@ -204,9 +267,9 @@ function ScriptsContent() {
                         </div>
                     ) : (
                         <div className="card h-full flex flex-col items-center justify-center py-20 bg-gray-50 border-dashed border-2">
-                            <Video size={48} className="text-gray-100 mb-4" />
-                            <h4 className="font-bold text-gray-400 uppercase tracking-widest text-[11px]">Ready to Film?</h4>
-                            <p className="text-xs text-gray-400 mt-1">Select your tone and let Inflomnia write your next hit.</p>
+                            <Video size={48} className="text-gray-300 mb-4" />
+                            <h4 className="font-bold text-gray-600 uppercase tracking-widest text-[11px]">Ready to Film?</h4>
+                            <p className="text-xs text-gray-500 mt-1">Select your tone and let Inflomnia write your next hit.</p>
                         </div>
                     )}
                 </div>

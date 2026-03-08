@@ -6,8 +6,8 @@ import {
     ResponsiveContainer, ReferenceLine,
 } from "recharts";
 import { reachApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 const STATUS_MAP = {
     none: { color: "#059669", bg: "#d1fae5", label: "Your reach looks healthy 🎉", icon: CheckCircle },
@@ -16,6 +16,7 @@ const STATUS_MAP = {
 };
 
 export default function ReachPage() {
+    const { creatorId } = useAccount();
     const [snapshots, setSnapshots] = useState<any[]>([]);
     const [analysis, setAnalysis] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -27,8 +28,8 @@ export default function ReachPage() {
         setLoading(true);
         try {
             const [snapRes, analyzeRes] = await Promise.all([
-                reachApi.getSnapshots(CREATOR_ID),
-                reachApi.analyze(CREATOR_ID),
+                reachApi.getSnapshots(creatorId),
+                reachApi.analyze(creatorId),
             ]);
             setSnapshots(snapRes.data.slice().reverse());
             setAnalysis(analyzeRes.data);
@@ -39,7 +40,7 @@ export default function ReachPage() {
     async function handleSync() {
         setSyncing(true);
         try {
-            await reachApi.syncFromInstagram(CREATOR_ID);
+            await reachApi.syncFromInstagram(creatorId);
             await fetchData();
         } catch { }
         setSyncing(false);
@@ -108,7 +109,7 @@ export default function ReachPage() {
                         <p className="text-sm text-gray-600 leading-relaxed font-medium">{analysis.reasoning}</p>
 
                         {analysis.baseline_reach && (
-                            <div className="flex gap-6 mt-5 py-4 border-t border-gray-50">
+                            <div className="flex gap-6 mt-5 py-4 border-t border-gray-100">
                                 <div className="space-y-1">
                                     <p className="text-[10px] uppercase font-black text-gray-400 tracking-widest">Typical Performance</p>
                                     <p className="text-lg font-black text-gray-900 tracking-tighter">{analysis.baseline_reach.toLocaleString()} <span className="text-[10px] text-gray-400">avg</span></p>
@@ -165,13 +166,13 @@ export default function ReachPage() {
                         </ResponsiveContainer>
                     </div>
                 ) : (
-                    <div className="h-[280px] flex flex-col items-center justify-center gap-4 text-gray-300 border-dashed border-2 rounded-2xl bg-gray-50/30">
-                        <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center text-gray-200">
+                    <div className="h-[280px] flex flex-col items-center justify-center gap-4 text-gray-400 border-dashed border-2 rounded-2xl bg-gray-50/30">
+                        <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
                             <BarChart2 size={32} />
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-black text-gray-500">Awaiting Historical Intelligence</p>
-                            <p className="text-[11px] font-medium mt-1">Run an AI Sync to pull your latest performance metrics.</p>
+                            <p className="text-sm font-black text-gray-600">Awaiting Historical Intelligence</p>
+                            <p className="text-[11px] font-medium text-gray-500 mt-1">Run an AI Sync to pull your latest performance metrics.</p>
                             <button onClick={handleSync} className="text-violet-500 font-bold text-[11px] mt-4 decoration-2 underline-offset-4 underline">Start First Deep Scan</button>
                         </div>
                     </div>

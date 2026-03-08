@@ -70,10 +70,27 @@ class WorkloadSignalService:
         Compute heatmap, derive pattern summary, call Claude for signal,
         persist to DB + S3, and return the signal dict.
         """
+        # --- Check Cache (1 hour) ---
+        latest = self.get_latest_signal(db, creator_id)
+        if latest:
+            # Parse the string back to datetime to compare
+            # generated_at is stored as str(signal.generated_at) in get_latest_signal
+            # Let's re-query to get the actual datetime object for precise comparison
+            raw_signal = (
+                db.query(WorkloadSignal)
+                .filter(WorkloadSignal.creator_id == creator_id)
+                .order_by(WorkloadSignal.generated_at.desc())
+                .first()
+            )
+            if raw_signal:
+                delta = datetime.utcnow() - raw_signal.generated_at
+                if delta.total_seconds() < 3600:
+                    return latest
+
         heatmap = self.compute_heatmap(db, creator_id)
         pattern_summary = self._summarize_patterns(heatmap)
 
-        # Call Claude 3.5
+        # Call Claude 
         signal_data = self._generate_claude_signal(pattern_summary)
 
         # Persist

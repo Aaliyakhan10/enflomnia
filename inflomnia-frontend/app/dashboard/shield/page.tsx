@@ -5,8 +5,8 @@ import {
     AlertCircle, RefreshCw
 } from "lucide-react";
 import { commentsApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 const TABS = ["all", "spam", "toxic", "bot", "high-value", "safe"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -25,6 +25,7 @@ const TAB_STYLES: Record<string, { active: string; dot: string }> = {
 };
 
 export default function ShieldPage() {
+    const { creatorId } = useAccount();
     const [tab, setTab] = useState<Tab>("all");
     const [comments, setComments] = useState<any[]>([]);
     const [summary, setSummary] = useState<any>({});
@@ -37,8 +38,8 @@ export default function ShieldPage() {
         setLoading(true);
         try {
             const [cRes, sRes] = await Promise.all([
-                commentsApi.getComments(CREATOR_ID, tab === "all" ? undefined : tab),
-                commentsApi.getSummary(CREATOR_ID),
+                commentsApi.getComments(creatorId, tab === "all" ? undefined : tab),
+                commentsApi.getSummary(creatorId),
             ]);
             setComments(cRes.data);
             setSummary(sRes.data);
@@ -48,7 +49,7 @@ export default function ShieldPage() {
 
     async function handleAnalyze() {
         setAnalyzing(true);
-        try { await commentsApi.analyzeBatch(CREATOR_ID, []); fetchData(); } catch { }
+        try { await commentsApi.syncFromInstagram(creatorId); fetchData(); } catch { }
         setAnalyzing(false);
     }
 

@@ -5,8 +5,8 @@ import {
     Eye, Play, Clock, Star, ExternalLink, Loader2,
     ChevronRight, Zap, LogOut, Film, AlertCircle
 } from "lucide-react";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function apiFetch(path: string, opts?: RequestInit) {
@@ -40,6 +40,7 @@ function HookScore({ score }: { score: number | null }) {
 }
 
 export default function InstagramPage() {
+    const { creatorId, refresh } = useAccount();
     const [account, setAccount] = useState<any>(null);
     const [reels, setReels] = useState<any[]>([]);
     const [analysis, setAnalysis] = useState<any>(null);
@@ -50,14 +51,14 @@ export default function InstagramPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        apiFetch(`/api/v1/instagram/account/${CREATOR_ID}`)
+        apiFetch(`/api/v1/instagram/account/${creatorId}`)
             .then(a => { setAccount(a); loadReels(); })
             .catch(() => { });
     }, []);
 
     async function loadReels() {
         try {
-            const r = await apiFetch(`/api/v1/instagram/reels/${CREATOR_ID}`);
+            const r = await apiFetch(`/api/v1/instagram/reels/${creatorId}`);
             setReels(r);
         } catch { }
     }
@@ -71,9 +72,10 @@ export default function InstagramPage() {
         try {
             const a = await apiFetch(`/api/v1/instagram/connect`, {
                 method: "POST",
-                body: JSON.stringify({ creator_id: CREATOR_ID, access_token: finalToken }),
+                body: JSON.stringify({ creator_id: creatorId, access_token: finalToken }),
             });
             setAccount(a); loadReels(); setToken("");
+            refresh(); // Update the sidebar
         } catch (err: any) {
             setError(err.message || "Failed to connect to Instagram.");
         }
@@ -83,8 +85,9 @@ export default function InstagramPage() {
     async function handleDisconnect() {
         setLoading(true);
         try {
-            await apiFetch(`/api/v1/instagram/disconnect/${CREATOR_ID}`, { method: "POST" });
+            await apiFetch(`/api/v1/instagram/disconnect/${creatorId}`, { method: "POST" });
             setAccount(null); setReels([]); setAnalysis(null); setToken("");
+            refresh(); // Update the sidebar
         } catch (err: any) { setError(err.message); }
         setLoading(false);
     }
@@ -92,7 +95,7 @@ export default function InstagramPage() {
     async function handleSync() {
         setSyncing(true);
         try {
-            await apiFetch(`/api/v1/instagram/sync/${CREATOR_ID}`, { method: "POST" });
+            await apiFetch(`/api/v1/instagram/sync/${creatorId}`, { method: "POST" });
             await loadReels();
         } catch (err: any) { setError(err.message); }
         setSyncing(false);
@@ -101,7 +104,7 @@ export default function InstagramPage() {
     async function handleAnalyze() {
         setAnalyzing(true);
         try {
-            const r = await apiFetch(`/api/v1/instagram/analyze/${CREATOR_ID}`, { method: "POST" });
+            const r = await apiFetch(`/api/v1/instagram/analyze/${creatorId}`, { method: "POST" });
             setAnalysis(r); await loadReels();
         } catch (err: any) { setError(err.message); }
         setAnalyzing(false);
@@ -252,7 +255,7 @@ export default function InstagramPage() {
 
                         {reels.length === 0 ? (
                             <div className="card text-center py-20 border-dashed border-2 bg-transparent">
-                                <Film size={40} className="text-gray-200 mx-auto mb-4" />
+                                <Film size={40} className="text-gray-300 mx-auto mb-4" />
                                 <p className="text-gray-400 text-sm font-medium">Reel feed is currently empty.</p>
                                 <button onClick={handleSync} className="text-pink-500 font-bold text-xs mt-2 underline decoration-2 underline-offset-4">Refresh Feed</button>
                             </div>
@@ -266,7 +269,7 @@ export default function InstagramPage() {
                                                 {reel.thumbnail_url ? (
                                                     <img src={reel.thumbnail_url} alt="reel" className="w-full h-full object-cover" />
                                                 ) : (
-                                                    <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-300">
+                                                    <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400">
                                                         <Play size={24} />
                                                     </div>
                                                 )}
@@ -279,7 +282,7 @@ export default function InstagramPage() {
                                                 <div className="space-y-2">
                                                     <div className="flex items-start justify-between">
                                                         <p className="text-gray-800 text-sm font-medium leading-relaxed line-clamp-2 pr-4">
-                                                            {reel.caption || <span className="text-gray-300 font-normal italic">No caption provided</span>}
+                                                            {reel.caption || <span className="text-gray-400 font-normal italic">No caption provided</span>}
                                                         </p>
                                                         {reel.permalink && (
                                                             <a href={reel.permalink} target="_blank" rel="noreferrer"
@@ -308,7 +311,7 @@ export default function InstagramPage() {
                                                                 {new Date(reel.published_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                                             </span>
                                                         )}
-                                                        <div className="h-1 w-1 rounded-full bg-gray-200" />
+                                                        <div className="h-1 w-1 rounded-full bg-gray-300" />
                                                         <button className="text-[10px] font-bold text-violet-600 hover:text-violet-800 transition-colors uppercase tracking-widest flex items-center gap-1 group/btn">
                                                             Reel Insights <ChevronRight size={10} className="group-hover/btn:translate-x-0.5 transition-transform" />
                                                         </button>

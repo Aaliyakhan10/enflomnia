@@ -6,8 +6,8 @@ import {
     Info, Sparkles, CheckCircle2, Zap
 } from "lucide-react";
 import { workloadApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 const SIGNAL_CONFIG = {
     reduce: { color: "#dc2626", icon: TrendingDown, label: "Take a Break", bg: "#fee2e2", desc: "Your engagement is dipping. Scaling back helps preserve your reach for the long term." },
@@ -29,6 +29,7 @@ function HeatmapCell({ value }: { value: number }) {
 }
 
 export default function WorkloadPage() {
+    const { creatorId } = useAccount();
     const [signal, setSignal] = useState<any>(null);
     const [heatmap, setHeatmap] = useState<any>(null);
     const [loading, setLoading] = useState(false);
@@ -40,8 +41,8 @@ export default function WorkloadPage() {
         setLoading(true);
         try {
             const [sRes, hRes] = await Promise.all([
-                workloadApi.getSignal(CREATOR_ID),
-                workloadApi.getHeatmap(CREATOR_ID),
+                workloadApi.getSignal(creatorId),
+                workloadApi.getHeatmap(creatorId),
             ]);
             setSignal(sRes.data);
             setHeatmap(hRes.data);
@@ -52,7 +53,7 @@ export default function WorkloadPage() {
     async function handleGenerateSignal() {
         setGenerating(true);
         try {
-            const res = await workloadApi.analyze(CREATOR_ID);
+            const res = await workloadApi.analyze(creatorId);
             setSignal(res.data);
             fetchData();
         } catch { }
@@ -126,8 +127,8 @@ export default function WorkloadPage() {
                             <div className="w-12 h-12 rounded-full bg-violet-50 text-violet-300 flex items-center justify-center mx-auto mb-4">
                                 <Zap size={20} />
                             </div>
-                            <p className="text-gray-400 font-medium">Ready to see your posting strategy?</p>
-                            <p className="text-xs text-gray-300 mt-1">We need to analyse your recent engagement first.</p>
+                            <p className="text-gray-500 font-medium">Ready to see your posting strategy?</p>
+                            <p className="text-xs text-gray-400 mt-1">We need to analyse your recent engagement first.</p>
                             <button onClick={handleGenerateSignal} className="text-violet-500 font-bold text-xs mt-3 underline decoration-2 underline-offset-4">Run Analysis Now</button>
                         </div>
                     )}
@@ -157,7 +158,7 @@ export default function WorkloadPage() {
                             <div className="space-y-2">
                                 <div className="flex gap-1 ml-16 mb-1">
                                     {[0, 6, 12, 18, 23].map(h => (
-                                        <div key={h} className="text-[9px] font-black text-gray-300 uppercase" style={{ width: `${100 / 24}%` }}>{h}h</div>
+                                        <div key={h} className="text-[9px] font-black text-gray-400 uppercase" style={{ width: `${100 / 24}%` }}>{h}h</div>
                                     ))}
                                 </div>
                                 {DAYS.map(day => (
@@ -182,34 +183,43 @@ export default function WorkloadPage() {
 
                 {/* Sidebar Tips */}
                 <div className="space-y-4">
-                    <div className="card bg-violet-600 text-white shadow-lg shadow-violet-500/20 border-0">
-                        <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
-                            <Sparkles size={14} /> Best Posting Days
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5 mt-3">
-                            {(signal?.best_days || ["Friday", "Sunday"]).map((day: string) => (
-                                <span key={day} className="px-2 py-1 rounded-lg bg-white/20 text-white text-[10px] font-bold">
-                                    {day}
-                                </span>
-                            ))}
+                    {signal?.best_days?.length > 0 && (
+                        <div className="card bg-violet-600 text-white shadow-lg shadow-violet-500/20 border-0">
+                            <h4 className="font-bold text-sm mb-2 flex items-center gap-2">
+                                <Sparkles size={14} /> Best Posting Days
+                            </h4>
+                            <div className="flex flex-wrap gap-1.5 mt-3">
+                                {signal.best_days.map((day: string) => (
+                                    <span key={day} className="px-2 py-1 rounded-lg bg-white/20 text-white text-[10px] font-bold">
+                                        {day}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <p className="text-[11px] text-violet-100/80 mt-4 font-medium leading-relaxed">
-                            Influencers in your niche see <span className="text-white font-bold underline">12% more engagement</span> when posting on these targeted windows.
-                        </p>
-                    </div>
+                    )}
 
-                    <div className="card space-y-4 border-amber-100 shadow-sm">
-                        <div className="flex items-center gap-2 text-amber-600">
-                            <AlertTriangle size={15} />
-                            <h4 className="font-bold text-xs uppercase tracking-wider">Burnout Warning</h4>
+                    {signal ? (
+                        <div className={`card space-y-4 shadow-sm ${signal.signal_type === 'reduce' ? 'border-amber-100' : signal.signal_type === 'increase' ? 'border-emerald-100' : 'border-gray-100'}`}>
+                            <div className={`flex items-center gap-2 ${signal.signal_type === 'reduce' ? 'text-amber-600' : signal.signal_type === 'increase' ? 'text-emerald-600' : 'text-blue-500'}`}>
+                                <AlertTriangle size={15} />
+                                <h4 className="font-bold text-xs uppercase tracking-wider">
+                                    {signal.signal_type === 'reduce' ? 'Burnout Risk Detected' : signal.signal_type === 'increase' ? 'Momentum Window' : 'Signal Status'}
+                                </h4>
+                            </div>
+                            {signal.reasoning && (
+                                <p className="text-xs text-gray-600 leading-relaxed italic">
+                                    &ldquo;{signal.reasoning}&rdquo;
+                                </p>
+                            )}
+                            <div className={`p-3 rounded-xl text-[11px] font-bold leading-tight ${signal.signal_type === 'reduce' ? 'bg-amber-50 text-amber-800' : signal.signal_type === 'increase' ? 'bg-emerald-50 text-emerald-800' : 'bg-blue-50 text-blue-800'}`}>
+                                {signal.signal_type === 'reduce' ? 'Consider scheduling a rest day this week to reset your engagement baseline.' : signal.signal_type === 'increase' ? `Target ${signal.recommended_posts_per_week} posts this week while momentum is high.` : `Maintain your current pace of ~${signal.recommended_posts_per_week} posts/week.`}
+                            </div>
                         </div>
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                            We've noticed a pattern in your watch time dropping after 3 consecutive daily posts.
-                        </p>
-                        <div className="p-3 rounded-xl bg-amber-50 text-[11px] font-bold text-amber-800 leading-tight">
-                            Inflomnia recommends a "Low-Effort" Story day this Tuesday to reset your creative energy.
+                    ) : (
+                        <div className="card border-gray-100 bg-gray-50/50 border-dashed">
+                            <p className="text-xs text-gray-500 font-medium">Run "Check My Signal" to get your personalised burnout & momentum analysis.</p>
                         </div>
-                    </div>
+                    )}
 
                     <div className="card border-gray-100 bg-gray-50">
                         <h4 className="text-xs font-bold text-gray-900 mb-3 uppercase tracking-widest">About Signals</h4>

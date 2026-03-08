@@ -7,8 +7,8 @@ import {
     Layout, Filter, BarChart3, ArrowUpRight
 } from "lucide-react";
 import { intelligenceApi, instagramApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 function InsightCard({ icon: Icon, title, description, color, bg }: { icon: any; title: string; description: string; color: string; bg: string }) {
     return (
@@ -26,6 +26,7 @@ function InsightCard({ icon: Icon, title, description, color, bg }: { icon: any;
 }
 
 export default function ContentIntelligencePage() {
+    const { creatorId } = useAccount();
     const [data, setData] = useState<any>({ suggestions: [], trends: {}, growth: {}, insights: {} });
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
@@ -39,10 +40,10 @@ export default function ContentIntelligencePage() {
         setLoading(true);
         try {
             const [sugRes, trendRes, growthRes, insightRes] = await Promise.all([
-                intelligenceApi.getSuggestions(CREATOR_ID),
-                intelligenceApi.getCompetitorsAndTrends(CREATOR_ID),
-                intelligenceApi.simulateGrowth(CREATOR_ID),
-                instagramApi.analyzeReels(CREATOR_ID)
+                intelligenceApi.getSuggestions(creatorId),
+                intelligenceApi.getCompetitorsAndTrends(creatorId),
+                intelligenceApi.simulateGrowth(creatorId),
+                instagramApi.analyzeReels(creatorId)
             ]);
             setData({
                 suggestions: sugRes.data || [],
@@ -112,13 +113,17 @@ export default function ContentIntelligencePage() {
                                     <TrendingUp size={12} /> 30-Day Growth Forecast
                                 </h3>
                                 <div className="text-4xl font-black tracking-tighter mb-1">
-                                    +{data.growth.projections?.[0]?.projected_followers?.toLocaleString() || "1,240"}
+                                    {data.growth.projections?.[0]?.projected_followers
+                                        ? `+${data.growth.projections[0].projected_followers.toLocaleString()}`
+                                        : <span className="text-violet-300 text-2xl">Run Analysis</span>}
                                 </div>
                                 <p className="text-xs text-violet-100/80 font-medium">Predicted New Followers</p>
 
-                                <div className="mt-8 p-3 rounded-xl bg-black/10 border border-white/10 text-xs text-violet-50 leading-relaxed italic font-medium">
-                                    &ldquo;{data.growth.strategic_pivot || "Your current reel retention is up 12% — maintaining this pace will trigger the explore algorithm."}&rdquo;
-                                </div>
+                                {data.growth.strategic_pivot && (
+                                    <div className="mt-8 p-3 rounded-xl bg-black/10 border border-white/10 text-xs text-violet-50 leading-relaxed italic font-medium">
+                                        &ldquo;{data.growth.strategic_pivot}&rdquo;
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -175,7 +180,7 @@ export default function ContentIntelligencePage() {
                             <div className="grid grid-cols-1 gap-4">
                                 {(data.suggestions || []).map((s: any, i: number) => (
                                     <div key={i} className="card group hover:shadow-xl transition-all duration-300 border-gray-100 flex gap-5 py-5">
-                                        <div className="w-10 h-10 rounded-2xl bg-gray-50 text-gray-300 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors shadow-none border border-gray-50">
+                                        <div className="w-10 h-10 rounded-2xl bg-gray-50 text-gray-400 flex items-center justify-center flex-shrink-0 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors shadow-none border border-gray-100">
                                             <Target size={20} />
                                         </div>
                                         <div className="flex-1">
@@ -208,8 +213,8 @@ export default function ContentIntelligencePage() {
                 </div>
             ) : (
                 <div className="card py-32 flex flex-col items-center justify-center text-center border-dashed border-2 bg-transparent">
-                    <BarChart3 size={48} className="text-gray-100 mb-4" />
-                    <h3 className="text-xl font-bold text-gray-300">No Intelligence Data Found</h3>
+                    <BarChart3 size={48} className="text-gray-300 mb-4" />
+                    <h3 className="text-xl font-bold text-gray-500">No Intelligence Data Found</h3>
                     <p className="text-sm text-gray-400 mt-2 max-w-sm">Click "Run AI Deep Dive" to generate your first account-level growth strategy.</p>
                 </div>
             )}

@@ -6,8 +6,8 @@ import {
     CheckCircle2, AlertCircle, Coins
 } from "lucide-react";
 import { pricingApi, instagramApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 const VERDICT_CONFIG = {
     great: { color: "#059669", label: "Great Deal! Above your market rate.", icon: TrendingUp, bg: "#d1fae5" },
@@ -17,6 +17,7 @@ const VERDICT_CONFIG = {
 };
 
 export default function PricingPage() {
+    const { creatorId } = useAccount();
     const [form, setForm] = useState({
         platform: "instagram", deliverable_type: "reel", reel_id: "",
         follower_count: "", engagement_rate: "",
@@ -29,7 +30,7 @@ export default function PricingPage() {
     const [tab, setTab] = useState<"estimate" | "history">("estimate");
 
     useEffect(() => {
-        instagramApi.getReels(CREATOR_ID).then(res => setReels(res.data)).catch(() => { });
+        instagramApi.getReels(creatorId).then(res => setReels(res.data)).catch(() => { });
     }, []);
 
     async function handleEstimate(e: React.FormEvent) {
@@ -37,7 +38,7 @@ export default function PricingPage() {
         setLoading(true);
         try {
             const res = await pricingApi.estimate({
-                creator_id: CREATOR_ID,
+                creator_id: creatorId,
                 platform: form.platform,
                 deliverable_type: form.deliverable_type,
                 reel_id: form.reel_id || undefined,
@@ -54,7 +55,7 @@ export default function PricingPage() {
 
     async function loadHistory() {
         try {
-            const res = await pricingApi.getHistory(CREATOR_ID);
+            const res = await pricingApi.getHistory(creatorId);
             setHistory(res.data?.items || []);
         } catch { }
     }
@@ -195,7 +196,7 @@ export default function PricingPage() {
                             </div>
                         ) : (
                             <div className="card h-full flex flex-col items-center justify-center py-20 bg-gray-50 border-dashed border-2">
-                                <BadgeDollarSign size={48} className="text-gray-200 mb-4" />
+                                <BadgeDollarSign size={48} className="text-gray-300 mb-4" />
                                 <h4 className="font-bold text-gray-400">Ready to Price Your Work?</h4>
                                 <p className="text-xs text-gray-400 mt-1">Enter deal details to see your AI valuation.</p>
                             </div>
@@ -207,7 +208,7 @@ export default function PricingPage() {
                 <div className="grid grid-cols-1 gap-4">
                     {history.length === 0 ? (
                         <div className="card py-20 text-center border-dashed border-2 bg-transparent overflow-hidden">
-                            <History size={40} className="text-gray-100 mx-auto mb-4" />
+                            <History size={40} className="text-gray-300 mx-auto mb-4" />
                             <p className="text-gray-400 font-medium">No previous estimates found.</p>
                         </div>
                     ) : history.map((h: any, i: number) => (

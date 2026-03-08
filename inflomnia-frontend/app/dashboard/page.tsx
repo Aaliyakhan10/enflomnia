@@ -8,20 +8,21 @@ import {
     ChevronRight, BrainCircuit
 } from "lucide-react";
 import { reachApi, commentsApi, intelligenceApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 
 function StatCard({ label, value, subtext, color }: { label: string; value: string | number; subtext: string; color: string }) {
     return (
         <div className="card text-center py-8 shadow-sm group hover:shadow-md transition-all">
             <div className="text-4xl font-black mb-1.5 tracking-tighter" style={{ color }}>{value}</div>
             <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</div>
-            <div className="text-[10px] font-medium text-gray-300 uppercase tracking-tighter">{subtext}</div>
+            <div className="text-[10px] font-medium text-gray-400 uppercase tracking-tighter">{subtext}</div>
         </div>
     );
 }
 
 export default function DashboardOverview() {
+    const { creatorId, account } = useAccount();
     const [loading, setLoading] = useState(true);
     const [reachStatus, setReachStatus] = useState<any>(null);
     const [comments, setComments] = useState<any>(null);
@@ -31,9 +32,9 @@ export default function DashboardOverview() {
         async function load() {
             try {
                 const [rData, cData, sData] = await Promise.all([
-                    reachApi.analyze(CREATOR_ID).catch(() => ({ data: null })),
-                    commentsApi.getSummary(CREATOR_ID).catch(() => ({ data: null })),
-                    intelligenceApi.getSuggestions(CREATOR_ID).catch(() => ({ data: [] }))
+                    reachApi.analyze(creatorId).catch(() => ({ data: null })),
+                    commentsApi.getSummary(creatorId).catch(() => ({ data: null })),
+                    intelligenceApi.getSuggestions(creatorId).catch(() => ({ data: [] }))
                 ]);
                 setReachStatus(rData?.data);
                 setComments(cData?.data);
@@ -57,7 +58,7 @@ export default function DashboardOverview() {
                         <Sparkles size={12} /> Powered by Inflomnia AI
                     </div>
                     <h1 className="text-4xl font-extrabold text-gray-900 tracking-tighter mb-2">
-                        Welcome back!
+                        {account?.username ? `Welcome, @${account.username}!` : "Welcome back!"}
                     </h1>
                     <p className="text-gray-500 font-medium max-w-md">
                         Your creator ecosystem is performing and protected. Here is today's overview.
@@ -67,9 +68,14 @@ export default function DashboardOverview() {
                     <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
                         <Activity size={20} />
                     </div>
-                    <div className="pr-4 border-r border-gray-50">
+                    <div className="pr-4 border-r border-gray-100">
                         <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Account Status</p>
-                        <p className="text-xs font-bold text-emerald-600">Perfectly Healthy</p>
+                        {loading
+                            ? <p className="text-xs font-bold text-gray-400">Checking...</p>
+                            : reachStatus?.is_anomaly
+                                ? <p className="text-xs font-bold text-amber-600">Anomaly Detected</p>
+                                : <p className="text-xs font-bold text-emerald-600">{reachStatus ? "Healthy" : "No data yet"}</p>
+                        }
                     </div>
                     <Link href="/dashboard/intelligence" className="text-xs font-bold text-gray-400 hover:text-violet-600 transition-colors px-2">
                         View Intelligence Profile
@@ -124,7 +130,7 @@ export default function DashboardOverview() {
                                     </div>
                                 ))}
                             </div>
-                            <div className="mt-auto pt-4 border-t border-gray-50">
+                            <div className="mt-auto pt-4 border-t border-gray-100">
                                 <Link href="/dashboard/reach" className="flex items-center justify-between group">
                                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Global Reach Health</span>
                                     <div className="flex items-center gap-1.5">
@@ -204,8 +210,8 @@ export default function DashboardOverview() {
                                 </div>
                             ) : (
                                 <div className="rounded-2xl p-6 text-center border-dashed border-2 bg-transparent grow flex flex-col items-center justify-center">
-                                    <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">No Suggestions Yet</p>
-                                    <p className="text-[10px] text-gray-300 mt-1">Visit Insights to generate</p>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">No Suggestions Yet</p>
+                                    <p className="text-[10px] text-gray-400 mt-1">Visit Insights to generate</p>
                                 </div>
                             )}
 

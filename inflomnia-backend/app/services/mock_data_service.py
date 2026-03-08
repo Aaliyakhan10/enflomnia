@@ -13,6 +13,11 @@ def seed_mock_instagram_data(db: Session, creator_id: str):
     """
     # 1. Ensure mock account exists
     account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+    
+    # If the user has explicitly connected a REAL account (token doesn't start with mock), DO NOT SEED MOCKS
+    if account and account.access_token and not account.access_token.startswith("mock"):
+        return
+        
     if not account:
         account = InstagramAccount(
             id=str(uuid.uuid4()),

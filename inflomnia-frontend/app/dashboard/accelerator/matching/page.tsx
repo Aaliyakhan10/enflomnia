@@ -6,8 +6,8 @@ import {
     Film
 } from "lucide-react";
 import { matchingApi, instagramApi } from "@/lib/api";
+import { useAccount } from "@/lib/account-context";
 
-const CREATOR_ID = "demo-creator-001";
 const INDUSTRIES = ["lifestyle", "fitness", "beauty", "tech", "gaming", "food", "travel", "fashion", "finance"];
 
 function ScoreBar({ value, color }: { value: number; color: string }) {
@@ -20,6 +20,7 @@ function ScoreBar({ value, color }: { value: number; color: string }) {
 }
 
 export default function MatchingPage() {
+    const { creatorId } = useAccount();
     const [matches, setMatches] = useState<any[]>([]);
     const [brands, setBrands] = useState<any[]>([]);
     const [reels, setReels] = useState<any[]>([]);
@@ -39,9 +40,9 @@ export default function MatchingPage() {
         setLoading(true);
         try {
             const [matchRes, brandRes, reelRes] = await Promise.all([
-                matchingApi.getMatches(CREATOR_ID),
+                matchingApi.getMatches(creatorId),
                 matchingApi.getBrands(),
-                instagramApi.getReels(CREATOR_ID),
+                instagramApi.getReels(creatorId),
             ]);
             setMatches(matchRes.data || []);
             setBrands(brandRes.data || []);
@@ -54,7 +55,7 @@ export default function MatchingPage() {
         setMatching(true);
         try {
             const res = await matchingApi.findMatches({
-                creator_id: CREATOR_ID,
+                creator_id: creatorId,
                 reel_id: selectedReelId || undefined
             });
             setMatches(res.data || []);
@@ -213,9 +214,9 @@ export default function MatchingPage() {
                         </div>
                     ) : matches.length === 0 ? (
                         <div className="card text-center py-20 bg-gray-50/50 border-dashed border-2">
-                            <Handshake size={48} className="text-gray-100 mx-auto mb-4" />
-                            <p className="text-gray-400 font-medium">No matches calculated.</p>
-                            <p className="text-xs text-gray-300 mt-1">Register some brands or click "Find My Matches".</p>
+                            <Handshake size={48} className="text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-600 font-medium">No matches calculated yet.</p>
+                            <p className="text-xs text-gray-500 mt-1">Register brands above then click &ldquo;Find My Matches&rdquo;.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-4">
