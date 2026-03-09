@@ -7,13 +7,7 @@ import {
 } from "lucide-react";
 import { useAccount } from "@/lib/account-context";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-async function apiFetch(path: string, opts?: RequestInit) {
-    const r = await fetch(`${API}${path}`, { headers: { "Content-Type": "application/json" }, ...opts });
-    if (!r.ok) throw new Error(await r.text());
-    return r.json();
-}
+import { instagramApi } from "@/lib/api";
 
 function StatPill({ icon: Icon, label, value, color }: { icon: React.ElementType; label: string; value: string | number; color: string }) {
     return (
@@ -51,15 +45,15 @@ export default function InstagramPage() {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        apiFetch(`/api/v1/instagram/account/${creatorId}`)
-            .then(a => { setAccount(a); loadReels(); })
+        instagramApi.getAccount(creatorId)
+            .then(res => { setAccount(res.data); loadReels(); })
             .catch(() => { });
     }, []);
 
     async function loadReels() {
         try {
-            const r = await apiFetch(`/api/v1/instagram/reels/${creatorId}`);
-            setReels(r);
+            const res = await instagramApi.getReels(creatorId);
+            setReels(res.data);
         } catch { }
     }
 
@@ -70,11 +64,8 @@ export default function InstagramPage() {
 
         setLoading(true); setError("");
         try {
-            const a = await apiFetch(`/api/v1/instagram/connect`, {
-                method: "POST",
-                body: JSON.stringify({ creator_id: creatorId, access_token: finalToken }),
-            });
-            setAccount(a); loadReels(); setToken("");
+            const res = await instagramApi.connect(creatorId, finalToken);
+            setAccount(res.data); loadReels(); setToken("");
             refresh(); // Update the sidebar
         } catch (err: any) {
             setError(err.message || "Failed to connect to Instagram.");
@@ -85,7 +76,7 @@ export default function InstagramPage() {
     async function handleDisconnect() {
         setLoading(true);
         try {
-            await apiFetch(`/api/v1/instagram/disconnect/${creatorId}`, { method: "POST" });
+            await instagramApi.disconnect(creatorId);
             setAccount(null); setReels([]); setAnalysis(null); setToken("");
             refresh(); // Update the sidebar
         } catch (err: any) { setError(err.message); }
@@ -95,7 +86,7 @@ export default function InstagramPage() {
     async function handleSync() {
         setSyncing(true);
         try {
-            await apiFetch(`/api/v1/instagram/sync/${creatorId}`, { method: "POST" });
+            await instagramApi.syncReels(creatorId);
             await loadReels();
         } catch (err: any) { setError(err.message); }
         setSyncing(false);
@@ -104,8 +95,8 @@ export default function InstagramPage() {
     async function handleAnalyze() {
         setAnalyzing(true);
         try {
-            const r = await apiFetch(`/api/v1/instagram/analyze/${creatorId}`, { method: "POST" });
-            setAnalysis(r); await loadReels();
+            const res = await instagramApi.analyzeReels(creatorId);
+            setAnalysis(res.data); await loadReels();
         } catch (err: any) { setError(err.message); }
         setAnalyzing(false);
     }
