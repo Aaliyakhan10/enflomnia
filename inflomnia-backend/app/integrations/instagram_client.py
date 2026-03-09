@@ -77,7 +77,7 @@ class InstagramClient:
         Requires the account to be Business/Creator.
         """
         metrics = [
-            "reach", "plays", "saved",
+            "reach", "saved",
             "ig_reels_avg_watch_time",
             "ig_reels_video_view_total_time",
             "total_interactions",

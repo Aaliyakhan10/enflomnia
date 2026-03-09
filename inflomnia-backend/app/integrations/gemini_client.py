@@ -66,6 +66,7 @@ class GeminiClient:
         
         config_args = {
             "max_output_tokens": 4096,
+            "response_mime_type": "application/json",
         }
         
         if system:
@@ -93,7 +94,6 @@ class GeminiClient:
                 raw = raw.strip()
 
             # ── Step 2: Extract outermost [ ... ] or { ... } ──────────────────
-            # Find the earliest occurrence of either array or object opener
             bracket_idx = raw.find('[')
             brace_idx   = raw.find('{')
 
@@ -101,27 +101,50 @@ class GeminiClient:
                 raise json.JSONDecodeError("No JSON structure found", raw, 0)
 
             if bracket_idx != -1 and (brace_idx == -1 or bracket_idx < brace_idx):
-                # Response is a JSON array
                 end_idx = raw.rfind(']')
                 if end_idx == -1:
                     raise json.JSONDecodeError("No closing ] found", raw, 0)
                 raw = raw[bracket_idx:end_idx + 1]
             else:
-                # Response is a JSON object
                 end_idx = raw.rfind('}')
                 if end_idx == -1:
                     raise json.JSONDecodeError("No closing } found", raw, 0)
                 raw = raw[brace_idx:end_idx + 1]
 
-            # ── Step 3: Strip trailing commas (Gemini loves adding them) ──────
-            # e.g.  "key": "value",  }   →   "key": "value"  }
+            # ── Step 3: Strip trailing commas ─────────────────────────────────
             raw = re.sub(r",\s*([\]}])", r"\1", raw)
 
-            return json.loads(raw)
+            # ── Step 4: Repair truncation if necessary ────────────────────────
+            try:
+                return json.loads(raw)
+            except json.JSONDecodeError:
+                # Attempt a simple repair: balance braces and brackets
+                repaired = self._repair_json(raw)
+                return json.loads(repaired)
         except json.JSONDecodeError as e:
             print(f"[ERROR] JSON Decode Error on response: {raw if 'raw' in locals() else 'N/A'}")
             raise e
         except Exception as e:
             print(f"[ERROR] Gemini JSON Invocation Failed: {repr(e)}")
             raise e
+
+    def _repair_json(self, s: str) -> str:
+        """Attempts to close unclosed JSON structures by balancing delimiters."""
+        s = s.strip()
+        stack = []
+        for char in s:
+            if char in "{[":
+                stack.append(char)
+            elif char in "}]":
+                if not stack:
+                    continue
+                stack.pop()
+        
+        while stack:
+            opener = stack.pop()
+            if opener == "{":
+                s += "}"
+            elif opener == "[":
+                s += "]"
+        return s
 

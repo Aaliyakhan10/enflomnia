@@ -64,59 +64,57 @@ class SchedulerService:
             # Fallback if no suggestions
             suggestions = [{"title": "Dynamic Content", "format": "Reel", "hook_idea": "Stay consistent!", "rationale": "High engagement slot."}]
         
-        # 3. Build the schedule over the next `days_ahead`
-        target_dates = []
-        today = datetime.utcnow()
-        
-        # We want to fit `rec_per_week` posts into a 7-day window.
-        # If days_ahead > 7, we scale.
-        total_posts_needed = int((rec_per_week / 7) * days_ahead)
-        if total_posts_needed < 1:
-            total_posts_needed = 1
-
-        # Find all matching "best days" in the window
+        # 3. Build prioritized slots
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         potential_slots = []
+        
         for i in range(1, days_ahead + 1):
             dt = today + timedelta(days=i)
             dow = dt.strftime("%A").lower()
             if dow in best_days:
-                # Get dynamic peak hour
-                peak_hour = self.workload_service.get_best_time_for_day(db, creator_id, dow)
-                slot_time = dt.replace(hour=peak_hour, minute=0, second=0, microsecond=0)
-                potential_slots.append(slot_time)
+                # 3a. Find Peak Slot
+                peak_h = self.workload_service.get_best_time_for_day(db, creator_id, dow)
+                peak_score = self.workload_service.get_slot_score(db, creator_id, dow, peak_h)
+                potential_slots.append({"time": dt.replace(hour=peak_h), "type": "peak", "score": peak_score})
+                
+                # 3b. Find Morning Slot (best between 7 AM and 11 AM)
+                morning_scores = [(h, self.workload_service.get_slot_score(db, creator_id, dow, h)) for h in range(7, 12)]
+                morning_h, morning_score = max(morning_scores, key=lambda x: x[1])
+                potential_slots.append({"time": dt.replace(hour=morning_h), "type": "morning", "score": morning_score})
 
-        # If we have more best days than needed, we take the top ones (already ordered by best_days usually)
-        # If we have fewer, we might need to add more days.
-        # For simplicity, we'll take all potential slots up to total_posts_needed.
-        # If potential_slots is empty (unlikely with fallbacks), we'll just add tomorrow.
-        
-        if not potential_slots:
-            tomorrow = today + timedelta(days=1)
-            peak_hour = self.workload_service.get_best_time_for_day(db, creator_id, tomorrow.strftime("%A"))
-            potential_slots.append(tomorrow.replace(hour=peak_hour, minute=0, second=0, microsecond=0))
+                # 3c. Find Niche/Afternoon Slot (best between 1 PM and 5 PM)
+                niche_scores = [(h, self.workload_service.get_slot_score(db, creator_id, dow, h)) for h in range(13, 18)]
+                niche_h, niche_score = max(niche_scores, key=lambda x: x[1])
+                potential_slots.append({"time": dt.replace(hour=niche_h), "type": "niche", "score": niche_score})
 
-        # Truncate or pad to match total_posts_needed if possible
-        # But usually we just want to fill the "best days" within the window.
-        # Let's stick to the best days found, but ensure we don't exceed a reasonable cap
-        # or fall too short of the recommendation.
+        # 4. Filter and Limit slots to match recommended posts per week
+        # We sort by score to ensure we pick the absolute best slots across the week first
+        potential_slots.sort(key=lambda x: x["score"], reverse=True)
+        total_posts_needed = int((rec_per_week / 7) * days_ahead)
+        if total_posts_needed < 1: total_posts_needed = 1
         
-        scheduled_slots = potential_slots[:total_posts_needed]
+        # Take the top N slots and re-sort them chronologically
+        final_slots = potential_slots[:total_posts_needed]
+        final_slots.sort(key=lambda x: x["time"])
         
+        # 5. Distribute suggestions to matching slot types
         new_items = []
-        sug_idx = 0
         
-        for dt in scheduled_slots:
-            # Rotate through suggestions
-            sug = suggestions[sug_idx % len(suggestions)]
-            sug_idx += 1
+        for slot in final_slots:
+            # Try to find a suggestion that matches the slot type
+            match = next((s for s in suggestions if s.get("preferred_time_type") == slot["type"]), suggestions[0])
             
-            topic = f"{sug.get('title', 'Content Idea')} - {sug.get('format', 'Reel')}"
-            caption = f"Hook: {sug.get('hook_idea', '')}\n\nRationale: {sug.get('rationale', '')}"
+            topic = f"{match.get('title', 'Content Idea')} - {match.get('format', 'Reel')}"
+            caption = (
+                f"Hook: {match.get('hook_idea', '')}\n\n"
+                f"Rationale: {match.get('rationale', '')}\n\n"
+                f"Slot Strategy: Optimized for {slot['type'].upper()} engagement."
+            )
             
             item = ScheduledContent(
                 id=f"sched_{uuid.uuid4().hex[:8]}",
                 creator_id=creator_id,
-                scheduled_at=dt,
+                scheduled_at=slot["time"],
                 status=ContentStatus.SUGGESTED,
                 content_type="Reel",
                 topic=topic,

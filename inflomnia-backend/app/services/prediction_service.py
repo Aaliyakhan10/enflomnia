@@ -57,13 +57,20 @@ Here are their recent top performing reels:
 
 Based on this data, suggest exactly 3 new specific content formats/topics they should test next to maximize engagement.
 Your suggestions must be highly strategic. The hook must use a strong psychological trigger (e.g. curiosity gap, controversy, relatability) and run no longer than 3 seconds. The rationale must explicitly reference their historical data.
+
+For each suggestion, also specify a "preferred_time_type" based on the content's nature:
+- "peak": Use for high-impact content that needs maximum traffic.
+- "morning": Use for educational or routine content.
+- "niche": Use for specific community-focused content.
+
 Return ONLY valid JSON with no markdown formatting. The format must be a list of objects exactly like this:
 [
   {{
     "title": "Short title",
     "format": "e.g., POV, Tutorial, VLOG",
     "rationale": "Why this will work, citing specific metrics from their past reels.",
-    "hook_idea": "A 1-sentence opening hook (max 15 words) using a strong psychological trigger."
+    "hook_idea": "A 1-sentence opening hook (max 15 words) using a strong psychological trigger.",
+    "preferred_time_type": "peak" | "morning" | "niche"
   }}
 ]"""
         result = self.bedrock.invoke_model_json(prompt)

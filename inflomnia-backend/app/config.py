@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # Google Gemini
     gemini_api_key: str = ""
-    gemini_model_id: str = "gemini-2.0-flash"
+    gemini_model_id: str = "gemini-2.5-flash"
 
     # Amazon Bedrock
     bedrock_model_id: str = "us.amazon.nova-2-lite-v1:0"

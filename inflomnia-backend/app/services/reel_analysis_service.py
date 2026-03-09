@@ -7,7 +7,7 @@ Reel Analysis Service
 """
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -54,6 +54,12 @@ class ReelAnalysisService:
                 db.query(ReachSnapshot).filter(ReachSnapshot.creator_id == creator_id).delete()
             except Exception: pass
             
+            # Also delete mock comments
+            try:
+                from app.models.comment import Comment
+                db.query(Comment).filter(Comment.creator_id == creator_id).delete()
+            except Exception: pass
+
             # Also clear insights cache
             account.overall_insights = None
             account.top_performing_pattern = None
@@ -70,6 +76,15 @@ class ReelAnalysisService:
         account.access_token = access_token
         db.commit()
         db.refresh(account)
+        
+        # ── Trigger Initial Sync for REAL accounts ──
+        # This populates Reels, Reach, and Burnout data so the dashboards aren't empty.
+        if not access_token.startswith("mock"):
+            try:
+                self.sync_reels(db, creator_id)
+            except Exception as e:
+                print(f"[WARNING] Initial sync failed: {e}")
+
         client.close()
         return account
 
@@ -130,7 +145,6 @@ class ReelAnalysisService:
         return stored
 
     def get_reels(self, db: Session, creator_id: str) -> list[Reel]:
-        seed_mock_instagram_data(db, creator_id)
         return (
             db.query(Reel)
             .filter(Reel.creator_id == creator_id)
@@ -167,42 +181,36 @@ class ReelAnalysisService:
         if not reels:
             return {"error": "No reels found. Sync first."}
 
-        # Build reel summary for Claude (top 10 by engagement)
-        top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:10]
+        # Build reel summary for AI (top 8 by engagement)
+        top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:8]
 
         reel_summaries = []
         for r in top_reels:
             reel_summaries.append({
-                "caption_preview": (r.caption or "")[:120],
+                "caption": (r.caption or "")[:60],
                 "likes": r.like_count,
                 "comments": r.comments_count,
                 "reach": r.reach,
                 "plays": r.plays,
                 "saved": r.saved,
-                "avg_watch_time_s": round(r.avg_watch_time_ms / 1000, 1) if r.avg_watch_time_ms else None,
+                "watch_time": round(r.avg_watch_time_ms / 1000, 1) if r.avg_watch_time_ms else 0,
             })
 
-        prompt = f"""You are an elite Instagram growth analyst auditing a creator's Reels performance data.
+        prompt = f"""Analyze these {len(reel_summaries)} Reels for @{account.username}:
+{json.dumps(reel_summaries)}
 
-Creator: @{account.username or creator_id}
-Followers: {account.followers_count or "unknown"}
-
-Here are their top {len(reel_summaries)} reels:
-{json.dumps(reel_summaries, indent=2)}
-
-Return a JSON object with EXACTLY these keys:
+Return JSON:
 {{
-  "overall_insights": "A punchy, 2-3 sentence summary of what's working and what's failing. Quote specific metrics (e.g., watch time vs reach).",
-  "top_performing_pattern": "What the absolute best-performing reels have in common structurally (e.g., 3-second hook, fast pacing, specific topic).",
-  "recommended_posting_style": "Strict, actionable recommendation for hook style, pacing, and CTA for their next batch of content.",
+  "overall_insights": "2-sentence summary of win/loss. Cite 1 metric.",
+  "top_performing_pattern": "1 common trait of top reels.",
+  "recommended_posting_style": "Actionable hook, pacing, CTA tips.",
   "reel_scores": [
-    {{"index": 0, "hook_quality": 7.5, "analysis": "Harsh, specific critique of this reel's performance based on the data provided."}}
+    {{"index": 0, "hook_quality": 8.5, "analysis": "One-sentence critique (<15 words)."}}
   ]
 }}
+Be ultra-concise. Return ONLY valid JSON."""
 
-Be highly specific, data-driven, and actionable. Avoid generic advice like 'make engaging content'. Return ONLY valid JSON."""
-
-        result = self.bedrock.invoke_model_json(prompt, system="You are a social media analytics expert.")
+        result = self.bedrock.invoke_model_json(prompt)
 
         # Persist scores back to DB
         scores = result.get("reel_scores", [])
@@ -214,9 +222,14 @@ Be highly specific, data-driven, and actionable. Avoid generic advice like 'make
                 reel.analysis_summary = s.get("analysis")
 
         # Update Account Cache
-        account.overall_insights = result.get("overall_insights", "")
-        account.top_performing_pattern = result.get("top_performing_pattern", "")
-        account.recommended_posting_style = result.get("recommended_posting_style", "")
+        def _to_str(val):
+            if isinstance(val, (dict, list)):
+                return json.dumps(val)
+            return str(val) if val is not None else ""
+
+        account.overall_insights = _to_str(result.get("overall_insights"))
+        account.top_performing_pattern = _to_str(result.get("top_performing_pattern"))
+        account.recommended_posting_style = _to_str(result.get("recommended_posting_style"))
         account.insights_last_generated_at = datetime.now(timezone.utc)
         
         db.commit()

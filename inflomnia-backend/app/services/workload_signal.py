@@ -150,6 +150,12 @@ class WorkloadSignalService:
             
         return peak_hour
 
+    def get_slot_score(self, db: Session, creator_id: str, day_name: str, hour: int) -> float:
+        """Get the specific engagement score for a day/hour slot."""
+        heatmap = self.compute_heatmap(db, creator_id)
+        day_data = heatmap.get(day_name.capitalize(), [0] * 24)
+        return day_data[hour] if 0 <= hour < 24 else 0.0
+
     # ------------------------------------------------------------------ #
     #  Helpers                                                             #
     # ------------------------------------------------------------------ #

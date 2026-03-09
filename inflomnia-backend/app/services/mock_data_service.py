@@ -14,25 +14,31 @@ def seed_mock_instagram_data(db: Session, creator_id: str):
     # 1. Ensure mock account exists
     account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
     
-    # If the user has explicitly connected a REAL account (token doesn't start with mock), DO NOT SEED MOCKS
-    if account and account.access_token and not account.access_token.startswith("mock"):
-        return
-        
     if not account:
-        account = InstagramAccount(
-            id=str(uuid.uuid4()),
-            creator_id=creator_id,
-            ig_user_id=f"mock_ig_{random.randint(1000, 9999)}",
-            username="mock_creator_studio",
-            name="Mock Creator",
-            profile_picture_url="https://ui-avatars.com/api/?name=Mock+Creator&background=random",
-            followers_count=random.randint(15000, 75000),
-            media_count=30,
-            account_type="BUSINESS",
-            access_token="mock_token_123"
-        )
-        db.add(account)
-        db.commit()
+        # We only create a mock account if the creator_id starts with "demo" 
+        # and has no account yet. This preserves the demo experience.
+        if creator_id.startswith("demo"):
+            account = InstagramAccount(
+                id=str(uuid.uuid4()),
+                creator_id=creator_id,
+                ig_user_id=f"mock_ig_{random.randint(1000, 9999)}",
+                username="mock_creator_studio",
+                name="Mock Creator",
+                profile_picture_url="https://ui-avatars.com/api/?name=Mock+Creator&background=random",
+                followers_count=random.randint(15000, 75000),
+                media_count=30,
+                account_type="BUSINESS",
+                access_token="mock_token_123"
+            )
+            db.add(account)
+            db.commit()
+            db.refresh(account)
+        else:
+            return # No account and not a demo ID -> nothing to seed
+    
+    # If the user has explicitly connected a REAL account (token doesn't start with mock), DO NOT SEED MOCKS
+    if account.access_token and not account.access_token.startswith("mock"):
+        return
 
     # 2. Check reels
     reels = db.query(Reel).filter(Reel.creator_id == creator_id).all()

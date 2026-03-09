@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+import json
 
 from app.database import get_db
 from app.schemas.instagram import ConnectInstagramIn, InstagramAccountOut, ReelBatchAnalysisOut
@@ -92,7 +93,11 @@ def analyze_reels(creator_id: str, db: Session = Depends(get_db)):
     try:
         return _svc.analyze_reels(db, creator_id)
     except ValueError as e:
+        # Business logic errors or missing accounts
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # LLM, DB, or other internal errors
+        import logging
+        logging.error(f"Analysis failed for {creator_id}: {type(e).__name__} - {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Intelligence Error: {str(e)}")
 

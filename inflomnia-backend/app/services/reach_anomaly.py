@@ -131,30 +131,11 @@ class ReachAnomalyService:
             .all()
         )
 
-        if (not reels or len(reels) < 2) and creator_id.startswith("demo"):
-            from app.services.mock_data_service import seed_mock_instagram_data
-            seed_mock_instagram_data(db, creator_id)
-            # Re-query
-            reels = (
-                db.query(Reel)
-                .filter(Reel.creator_id == creator_id)
-                .order_by(Reel.published_at.desc())
-                .limit(30)
-                .all()
-            )
-
         if len(reels) < 2:
             return {"anomaly_type": "none", "confidence": 0.0, "reasoning": "Not enough data yet. Post 2+ reels to see patterns."}
 
         latest = reels[0].reach or 0
         baseline = self._rolling_baseline(reels[1:8])  # 7-day avg (excluding latest)
-
-        if baseline == 0 and creator_id.startswith("demo"):
-             from app.services.mock_data_service import seed_mock_instagram_data
-             seed_mock_instagram_data(db, creator_id)
-             # One last try
-             reels = db.query(Reel).filter(Reel.creator_id == creator_id).order_by(Reel.published_at.desc()).all()
-             baseline = self._rolling_baseline(reels[1:8])
 
         if baseline == 0:
             return {"anomaly_type": "none", "confidence": 0.0, "reasoning": "Baseline still building. We need at least 3-5 days of high-quality reach history to detect anomalies."}
