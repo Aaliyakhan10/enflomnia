@@ -79,10 +79,10 @@ export default function ContentIntelligencePage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                         <BrainCircuit size={24} className="text-violet-500" />
-                        The DNA & Soil: Enterprise Memory Bank
+                        Brand Context
                     </h1>
                     <p className="text-sm text-gray-500 max-w-lg">
-                        Fact-Grounded in your private data. Enflomnia indexes your reports, specs, and history to create a Unified Knowledge Graph.
+                        Grounded in your private data. Our AI indexes your reports and history to ensure all content stays on brand.
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -96,7 +96,7 @@ export default function ContentIntelligencePage() {
                         className="btn btn-brand gap-2 px-6 py-2.5 shadow-md shadow-violet-500/20"
                         style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
                         {analyzing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                        {analyzing ? "Grounding Facts..." : "Index Memory Bank"}
+                        {analyzing ? "Grounding Facts..." : "Sync Brand Knowledge"}
                     </button>
                 </div>
             </div>
@@ -176,7 +176,7 @@ export default function ContentIntelligencePage() {
 
                         {/* Main Suggestions */}
                         <div className="space-y-4">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">Enflomnia Agentic Loops</h3>
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">AI Content Strategy</h3>
                             <div className="grid grid-cols-1 gap-4">
                                 {(data.suggestions || []).map((s: any, i: number) => (
                                     <div key={i} className="card group hover:shadow-xl transition-all duration-300 border-gray-100 flex gap-5 py-5">

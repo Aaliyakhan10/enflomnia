@@ -196,6 +196,25 @@ export const enterpriseApi = {
 
     getSovereignty: (enterpriseId: string) =>
         api.get(`/api/enterprise/${enterpriseId}/sovereignty`),
+
+    // Creative Studio (Images)
+    generateImage: (enterpriseId: string, data: { prompt: string; aspect_ratio?: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/image/generate`, data),
+
+    // Bark: Compliance Gate
+    auditContent: (enterpriseId: string, data: { content: string; content_type?: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/compliance/audit`, data),
+
+    // Fruit: Publish to Social
+    publishContent: (enterpriseId: string, data: { type: string; day: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/publish`, data),
+
+    // Campaigns (Strategist)
+    generateCampaign: (enterpriseId: string, data: { goal: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/campaigns`, data),
+
+    listCampaigns: (enterpriseId: string) =>
+        api.get(`/api/enterprise/${enterpriseId}/campaigns`),
 };
 
 export default api;

@@ -69,10 +69,10 @@ export default function PricingPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                         <BadgeDollarSign size={24} className="text-emerald-500" />
-                        Remotion Engine
+                        Deal Negotiator
                     </h1>
                     <p className="text-sm text-gray-500 max-w-lg">
-                        Programmatically render unique, branded videos at scale. Enflomnia's Remotion Engine calculates rendition costs and ROI in real-time.
+                        Calculate fair market value for your content based on real-time niche demand and your audience metrics.
                     </p>
                 </div>
                 <div className="flex bg-gray-100 p-1 rounded-xl shadow-inner">
@@ -100,7 +100,7 @@ export default function PricingPage() {
                             </div>
 
                             <p className="text-xs text-gray-400 leading-relaxed font-medium">
-                                Enflomnia's Remotion Engine analyses your assets and niche demand to calculate optimum rendition strategies.
+                                Our AI calculates your optimum pricing strategy based on recent brand deals and market rates.
                             </p>
 
                             <form onSubmit={handleEstimate} className="space-y-4">

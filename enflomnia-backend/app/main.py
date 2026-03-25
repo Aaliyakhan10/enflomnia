@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import reach, comments, workload, pricing, scripts, matching, instagram, intelligence, content_schedule, orchestrator
+from app.routers import reach, comments, workload, pricing, scripts, matching, instagram, intelligence, content_schedule, orchestrator, webhooks
 from app.routers import enterprise as enterprise_router
 
 # Import all models so SQLAlchemy can discover them
@@ -45,6 +45,8 @@ app.include_router(content_schedule.router)
 app.include_router(orchestrator.router)
 # Enterprise Vault
 app.include_router(enterprise_router.router)
+# Nutrient Cycle Webhooks
+app.include_router(webhooks.router)
 
 
 @app.get("/health", tags=["Health"])

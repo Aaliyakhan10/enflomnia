@@ -61,10 +61,10 @@ export default function SchedulerPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                         <CalendarDays size={24} className="text-emerald-500" />
-                        Loop Scheduler
+                        Smart Scheduler
                     </h1>
                     <p className="text-sm text-gray-500 max-w-lg">
-                        Smart planning based on your workload signals and AI audience predictions.
+                        Plan your content calendar automatically based on your workload signals and audience activity logic.
                     </p>
                 </div>
                 <button onClick={handleGeneratePlan} disabled={generating}
@@ -82,7 +82,7 @@ export default function SchedulerPage() {
                     </div>
                     <h3 className="text-xl font-extrabold text-gray-900 mb-2">Your Calendar is Empty</h3>
                     <p className="text-gray-400 text-sm max-w-sm mx-auto mb-8 font-medium">
-                        Let Enflomnia's Sentinel layer analyse your reach patterns to predict the best times and formats for your next hit.
+                        Let Enflomnia analyse your reach patterns and predict the best times to post your next content.
                     </p>
                     <button onClick={handleGeneratePlan} disabled={generating}
                         className="btn btn-outline gap-2 px-8 py-3 text-emerald-600 border-emerald-200 bg-emerald-50/30 hover:bg-emerald-50">

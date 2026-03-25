@@ -83,10 +83,10 @@ export default function MatchingPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                         <PersonStanding size={24} className="text-violet-500" />
-                        Imagen 4 Studio
+                        Brand Matchmaker
                     </h1>
                     <p className="text-sm text-gray-500 max-w-lg">
-                        Autonomous visual governance. Enflomnia's Imagen 4 Studio generates brand-safe, 2K visuals with surgical conversational editing.
+                        Find the perfect brand partnerships. Our AI matches your content style and audience demographics to relevant brands.
                     </p>
                 </div>
                 <button onClick={() => setShowAddBrand(true)}
@@ -152,10 +152,10 @@ export default function MatchingPage() {
                             <div className="p-2 rounded-xl bg-violet-100/50 text-violet-600">
                                 <Sparkles size={16} />
                             </div>
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">AI Profile Engine</h3>
+                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">AI Matching Engine</h3>
                         </div>
                         <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
-                            Enflomnia's Imagen 4 Studio automatically synthesizes your brand guidelines to generate high-fidelity, compliant visuals.
+                            Enflomnia automatically analyzes your content style to recommend high-paying brand partnerships.
                         </p>
                         <div className="space-y-4 pt-2">
                             <label className="text-[10px] uppercase font-black text-gray-400 px-1 mb-1 block">Personalize by Reel</label>

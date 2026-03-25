@@ -16,5 +16,5 @@ from app.models.enterprise import Enterprise  # noqa: F401
 from app.models.data_connector import DataConnector  # noqa: F401
 from app.models.knowledge_document import KnowledgeDocument  # noqa: F401
 from app.models.fact_record import FactRecord  # noqa: F401
+from app.models.campaign import CampaignStrategy  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
-

@@ -3,7 +3,7 @@ Enterprise Router — All enterprise data management endpoints.
 Handles connectors, knowledge lake, fact database, and privacy guard.
 """
 import uuid
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -14,6 +14,8 @@ from app.services.connector_service import ConnectorService
 from app.services.knowledge_lake import KnowledgeLakeService
 from app.services.fact_database import FactDatabaseService
 from app.services.data_guard import DataGuardService
+from app.services.campaign_service import CampaignService
+from app.schemas.campaign import CampaignCreate
 
 router = APIRouter(prefix="/api/enterprise", tags=["Enterprise Vault"])
 
@@ -53,6 +55,18 @@ class ContentCheck(BaseModel):
 
 class FactsCSVImport(BaseModel):
     csv_text: str
+
+class ImageGenerateRequest(BaseModel):
+    prompt: str
+    aspect_ratio: str = "1:1"
+
+class ComplianceCheck(BaseModel):
+    content: str
+    content_type: str = "Script / Video Idea"
+
+class PublishPayload(BaseModel):
+    type: str
+    day: str
 
 
 # ── Enterprise CRUD ──────────────────────────────────────────────────────────
@@ -170,3 +184,44 @@ def get_audit_trail(enterprise_id: str, db: Session = Depends(get_db)):
 @router.get("/{enterprise_id}/sovereignty")
 def check_sovereignty(enterprise_id: str, db: Session = Depends(get_db)):
     return guard_svc.check_sovereignty(db, enterprise_id)
+
+# ── Bark: Compliance Gate ────────────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/compliance/audit")
+def audit_content(enterprise_id: str, body: ComplianceCheck, db: Session = Depends(get_db)):
+    from app.services.compliance_service import ComplianceService
+    compliance_svc = ComplianceService(db)
+    return compliance_svc.audit_content(enterprise_id, body.content, body.content_type)
+
+# ── Fruit: Publishing Gate ──────────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/publish")
+def publish_content(enterprise_id: str, body: PublishPayload, db: Session = Depends(get_db)):
+    from app.services.publishing_service import PublishingService
+    pub_svc = PublishingService(db)
+    return pub_svc.publish_content(enterprise_id, body.model_dump())
+
+# ── Campaign Strategist ──────────────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/campaigns")
+def generate_campaign(enterprise_id: str, body: CampaignCreate, db: Session = Depends(get_db)):
+    campaign_svc = CampaignService(db)
+    return campaign_svc.generate_campaign(enterprise_id, body.goal)
+
+@router.get("/{enterprise_id}/campaigns")
+def list_campaigns(enterprise_id: str, db: Session = Depends(get_db)):
+    campaign_svc = CampaignService(db)
+    return campaign_svc.list_campaigns(enterprise_id)
+
+
+# ── Creative Studio ──────────────────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/image/generate")
+def generate_creative_image(enterprise_id: str, body: ImageGenerateRequest):
+    from app.integrations.gemini_client import GeminiClient
+    try:
+        client = GeminiClient()
+        base64_img = client.generate_image(prompt=body.prompt, aspect_ratio=body.aspect_ratio)
+        return {"image_data": base64_img, "prompt": body.prompt}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

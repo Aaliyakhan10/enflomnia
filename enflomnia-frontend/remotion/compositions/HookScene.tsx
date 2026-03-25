@@ -37,94 +37,56 @@ export const HookScene: React.FC<HookSceneProps> = ({ hook, tone }) => {
       style={{
         width,
         height,
-        backgroundColor: colors.bg,
+        background: `linear-gradient(${interpolate(frame, [0, 90], [0, 180])}deg, ${colors.bg}, ${colors.accent})`,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: 80,
+        padding: 40,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Background radial glow */}
+      {/* Dynamic noise overlay for texture */}
       <div
         style={{
           position: "absolute",
-          width: 600,
-          height: 600,
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${colors.accent}22 0%, transparent 70%)`,
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          opacity: shimmer + 0.6,
+          inset: 0,
+          opacity: shimmer + 0.05,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
 
-      {/* Accent line */}
+      {/* Hook text in a TikTok-style sticker block */}
       <div
         style={{
-          width: interpolate(lineWidth, [0, 1], [0, 120]),
-          height: 4,
-          backgroundColor: colors.accent,
-          borderRadius: 2,
-          marginBottom: 40,
-          opacity,
-        }}
-      />
-
-      {/* Hook text */}
-      <div
-        style={{
-          transform: `scale(${scale})`,
+          transform: `scale(${scale}) translateY(-40px)`,
           opacity,
           textAlign: "center",
+          backgroundColor: "rgba(0, 0, 0, 0.75)",
+          padding: "24px 32px",
+          borderRadius: "16px",
+          border: `2px solid ${colors.accent}`,
+          boxShadow: `0 8px 32px rgba(0,0,0,0.5)`,
+          maxWidth: "85%",
+          backdropFilter: "blur(10px)",
         }}
       >
         <p
           style={{
-            fontSize: 72,
+            fontSize: 64,
             fontWeight: 900,
             color: colors.text,
-            lineHeight: 1.1,
-            fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
-            letterSpacing: "-0.02em",
-            textShadow: `0 4px 30px ${colors.accent}44`,
+            lineHeight: 1.2,
+            fontFamily: "'Inter', sans-serif",
+            textTransform: "uppercase",
+            textShadow: `2px 2px 0px ${colors.bg}`,
+            margin: 0,
           }}
         >
           {hook}
         </p>
       </div>
-
-      {/* Bottom accent dot */}
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          backgroundColor: colors.accent,
-          marginTop: 50,
-          opacity: interpolate(frame, [15, 25], [0, 1], { extrapolateRight: "clamp" }),
-        }}
-      />
-
-      {/* Corner timestamp */}
-      <p
-        style={{
-          position: "absolute",
-          bottom: 40,
-          right: 50,
-          fontSize: 14,
-          fontWeight: 700,
-          color: `${colors.accent}88`,
-          fontFamily: "'SF Mono', 'Fira Code', monospace",
-          letterSpacing: "0.1em",
-          opacity: interpolate(frame, [20, 30], [0, 1], { extrapolateRight: "clamp" }),
-        }}
-      >
-        00:00
-      </p>
     </div>
   );
 };

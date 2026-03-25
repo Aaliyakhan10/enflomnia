@@ -50,43 +50,38 @@ export const CTAScene: React.FC<CTASceneProps> = ({ cta, tone }) => {
       style={{
         width,
         height,
-        backgroundColor: colors.bg,
+        background: `linear-gradient(${interpolate(frame, [0, 90], [90, 270])}deg, ${colors.bg}, ${colors.accent})`,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: 80,
+        padding: 40,
         position: "relative",
         overflow: "hidden",
       }}
     >
-      {/* Gradient backlight */}
+      {/* Dynamic noise overlay for texture */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0.05,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+        }}
+      />
+
+      {/* Pulsing background glow */}
       <div
         style={{
           position: "absolute",
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 800,
-          height: 800,
+          width: 500,
+          height: 500,
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${colors.accent}20 0%, transparent 60%)`,
-          opacity: 0.8,
-        }}
-      />
-
-      {/* Pulsing ring */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          width: 300,
-          height: 300,
-          borderRadius: "50%",
-          border: `2px solid ${colors.accent}`,
-          transform: `translate(-50%, -50%) scale(${pulseScale})`,
-          opacity: pulseOpacity,
+          background: `radial-gradient(circle, ${colors.bg} 0%, transparent 70%)`,
+          opacity: pulseOpacity + 0.5,
         }}
       />
 
@@ -94,76 +89,70 @@ export const CTAScene: React.FC<CTASceneProps> = ({ cta, tone }) => {
       <div
         style={{
           opacity: interpolate(frame, [5, 15], [0, 1], { extrapolateRight: "clamp" }),
-          marginBottom: 24,
+          transform: `translateY(-30px)`,
+          marginBottom: 16,
+          zIndex: 10,
         }}
       >
         <span
           style={{
-            fontSize: 14,
+            fontSize: 20,
             fontWeight: 800,
             letterSpacing: "0.25em",
             textTransform: "uppercase" as const,
-            background: colors.gradient,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            fontFamily: "'SF Mono', monospace",
+            color: "#ffffff",
+            fontFamily: "'Inter', sans-serif",
+            textShadow: "0 2px 10px rgba(0,0,0,0.5)",
           }}
         >
-          YOUR MOVE
+          Your Move
         </span>
       </div>
 
-      {/* CTA Text */}
+      {/* CTA Text Box */}
       <div
         style={{
-          transform: `scale(${bounceScale})`,
+          transform: `scale(${bounceScale}) translateY(-30px)`,
           opacity,
           textAlign: "center",
-          maxWidth: 800,
+          maxWidth: "85%",
+          backgroundColor: "#ffffff",
+          padding: "24px 32px",
+          borderRadius: "16px",
+          boxShadow: `0 10px 40px rgba(0,0,0,0.4)`,
+          zIndex: 10,
         }}
       >
         <p
           style={{
             fontSize: 52,
             fontWeight: 900,
-            color: "#ffffff",
+            color: colors.bg,
             lineHeight: 1.2,
             fontFamily: "'Inter', sans-serif",
             letterSpacing: "-0.02em",
+            margin: 0,
           }}
         >
           {cta}
         </p>
       </div>
 
-      {/* Gradient accent bar */}
+      {/* Follow arrow hint */}
       <div
         style={{
-          width: interpolate(wipeProgress, [0, 100], [0, 200]),
-          height: 4,
-          background: colors.gradient,
-          borderRadius: 2,
-          marginTop: 40,
-          opacity,
-        }}
-      />
-
-      {/* Branding */}
-      <p
-        style={{
           position: "absolute",
-          bottom: 50,
-          fontSize: 14,
-          fontWeight: 700,
-          color: `${colors.accent}66`,
-          fontFamily: "'Inter', sans-serif",
-          letterSpacing: "0.15em",
-          textTransform: "uppercase" as const,
-          opacity: interpolate(frame, [20, 35], [0, 1], { extrapolateRight: "clamp" }),
+          right: 32,
+          top: "50%",
+          transform: `translateY(-50%)`,
+          opacity: interpolate(frame, [15, 30], [0, 1], { extrapolateRight: "clamp" }),
+          zIndex: 10,
         }}
       >
-        ENFLOMNIA
-      </p>
+        <div style={{ fontSize: 48, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.5))", animation: "bounceRight 1s infinite alternate" }}>
+           👉
+        </div>
+      </div>
     </div>
   );
 };

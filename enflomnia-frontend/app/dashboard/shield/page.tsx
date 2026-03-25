@@ -76,10 +76,10 @@ export default function ShieldPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1">
                         <Shield size={22} style={{ color: "#7c3aed" }} />
-                        The Aegis: Sentinel Immune System
+                        Brand Safety
                     </h1>
                     <p className="text-sm text-gray-500">
-                        An autonomous compliance layer that auto-corrects risky language to ensure 100% legal safety in milliseconds.
+                        An autonomous compliance layer that auto-corrects risky language to ensure your brand's reputation is protected.
                     </p>
                 </div>
                 <button onClick={handleAnalyze} disabled={analyzing} className="btn btn-brand gap-2">

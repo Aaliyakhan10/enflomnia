@@ -3,29 +3,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
     Home, BarChart2, MessageCircle, BatteryCharging, Film,
-    BadgeDollarSign, PersonStanding, ScrollText,
+    Image, Video, ScrollText,
     Brain, CalendarDays, Sparkles, Instagram,
-    Database, Plug, BookOpen, Table2
+    Database, Plug, BookOpen, Table2, Rocket
 } from "lucide-react";
 import { AccountProvider, useAccount } from "@/lib/account-context";
 
 const coreNav = [
-    { href: "/dashboard", label: "System Overview", icon: Home },
-    { href: "/dashboard/reach", label: "System Pulse", icon: BarChart2 },
-    { href: "/dashboard/shield", label: "The Aegis", icon: MessageCircle },
-    { href: "/dashboard/workload", label: "The Pulse", icon: BatteryCharging },
+    { href: "/dashboard", label: "Dashboard", icon: Home },
+    { href: "/dashboard/reach", label: "Reach Metrics", icon: BarChart2 },
+    { href: "/dashboard/shield", label: "Brand Safety", icon: MessageCircle },
+    { href: "/dashboard/workload", label: "Workload Pulse", icon: BatteryCharging },
     { href: "/dashboard/instagram", label: "Asset Gallery", icon: Film },
 ];
 
-const monetizeNav = [
-    { href: "/dashboard/accelerator/pricing", label: "Remotion Engine", icon: BadgeDollarSign },
-    { href: "/dashboard/accelerator/matching", label: "Imagen 4 Studio", icon: PersonStanding },
-    { href: "/dashboard/accelerator/scripts", label: "Gemini Cortex", icon: ScrollText },
+const creativeNav = [
+    { href: "/dashboard/creative/image", label: "Image Studio", icon: Image },
+    { href: "/dashboard/accelerator/scripts", label: "Video Studio", icon: Video },
 ];
 
 const aiNav = [
-    { href: "/dashboard/intelligence", label: "The DNA & Soil", icon: Brain },
-    { href: "/dashboard/scheduler", label: "Autonomous Loop", icon: CalendarDays },
+    { href: "/dashboard/intelligence", label: "Brand Context", icon: Brain },
+    { href: "/dashboard/scheduler", label: "Smart Scheduler", icon: CalendarDays },
+    { href: "/dashboard/campaigns", label: "Campaign Strategist", icon: Rocket },
 ];
 
 const vaultNav = [
@@ -79,9 +79,9 @@ function SidebarBottom() {
             <div className="flex items-center gap-2.5 px-3 py-3 rounded-xl bg-violet-50 border border-violet-100">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'bg-gray-300'}`} />
                 <div>
-                    <p className="text-xs font-semibold text-gray-800">Enflomnia AI</p>
+                    <p className="text-xs font-semibold text-gray-800">Enflomnia Platform</p>
                     <p className={`text-[10px] ${isConnected ? 'text-emerald-600' : 'text-gray-400'}`}>
-                        {isLoading ? "Checking..." : isConnected ? "Nervous System Ready" : "System Offline"}
+                        {isLoading ? "Checking..." : isConnected ? "System Ready" : "System Offline"}
                     </p>
                 </div>
             </div>
@@ -102,7 +102,7 @@ function DashboardSidebar() {
                     </div>
                     <div>
                         <div className="text-sm font-bold text-gray-900 tracking-tight">Enflomnia</div>
-                        <div className="text-[11px] font-medium" style={{ color: "#7c3aed" }}>Nervous System</div>
+                        <div className="text-[11px] font-medium" style={{ color: "#7c3aed" }}>Enterprise</div>
                     </div>
                 </div>
             </div>
@@ -110,19 +110,19 @@ function DashboardSidebar() {
             {/* Nav */}
             <nav className="flex-1 px-3 pt-4 pb-3 space-y-5 overflow-y-auto">
                 <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Core Nervous System</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Platform Core</p>
                     <div className="space-y-0.5">
                         {coreNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Asset Factory</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Creative Studio</p>
                     <div className="space-y-0.5">
-                        {monetizeNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
+                        {creativeNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                     </div>
                 </div>
                 <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">Cognition</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 mb-2">AI Agents</p>
                     <div className="space-y-0.5">
                         {aiNav.map(i => <NavLink key={i.href} {...i} pathname={pathname} />)}
                     </div>

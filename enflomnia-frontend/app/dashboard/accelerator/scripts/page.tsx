@@ -177,7 +177,6 @@ function ScriptsContent() {
         const topicParam = searchParams.get("topic");
         if (topicParam) {
             setForm(f => ({ ...f, topic: topicParam }));
-            handleAutoGenerate(topicParam);
         }
     }, [searchParams]);
 
@@ -211,10 +210,10 @@ function ScriptsContent() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                         <ScrollText size={24} className="text-amber-500" />
-                        Gemini Cortex
+                        Script Writer
                     </h1>
                     <p className="text-sm text-gray-500 max-w-lg">
-                        Enflomnia's Gemini Cortex extracts high-impact social hooks and blogs from massive enterprise reports with 2M token reasoning.
+                        Use AI to extract high-impact social hooks and generate optimized scripts.
                     </p>
                 </div>
                 <button onClick={() => handleAutoGenerate()} disabled={loading}
@@ -401,8 +400,8 @@ function ScriptsContent() {
                     ) : (
                         <div className="card h-full flex flex-col items-center justify-center py-20 bg-gray-50 border-dashed border-2">
                             <Video size={48} className="text-gray-300 mb-4" />
-                            <h4 className="font-bold text-gray-600 uppercase tracking-widest text-[11px]">Ready to Film?</h4>
-                            <p className="text-xs text-gray-500 mt-1">Select your tone and let Gemini Cortex evolve your strategy.</p>
+                            <h4 className="font-bold text-gray-600 uppercase tracking-widest text-[11px]">Ready to Write?</h4>
+                            <p className="text-xs text-gray-500 mt-1">Select your tone and let AI draft your script.</p>
                         </div>
                     )}
                 </div>
