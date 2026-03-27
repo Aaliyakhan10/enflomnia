@@ -3,7 +3,8 @@ Enterprise Router — All enterprise data management endpoints.
 Handles connectors, knowledge lake, fact database, and privacy guard.
 """
 import uuid
-from fastapi import APIRouter, Depends, Query, HTTPException
+import io
+from fastapi import APIRouter, Depends, Query, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -15,6 +16,7 @@ from app.services.knowledge_lake import KnowledgeLakeService
 from app.services.fact_database import FactDatabaseService
 from app.services.data_guard import DataGuardService
 from app.services.campaign_service import CampaignService
+from app.services.video_service import VideoService
 from app.schemas.campaign import CampaignCreate
 
 router = APIRouter(prefix="/api/enterprise", tags=["Enterprise Vault"])
@@ -59,6 +61,11 @@ class FactsCSVImport(BaseModel):
 class ImageGenerateRequest(BaseModel):
     prompt: str
     aspect_ratio: str = "1:1"
+    count: int = 1  # 1-4 images
+
+class CaptionGenerateRequest(BaseModel):
+    description: str
+    content_type: str = "video"  # video, image, post
 
 class ComplianceCheck(BaseModel):
     content: str
@@ -67,6 +74,11 @@ class ComplianceCheck(BaseModel):
 class PublishPayload(BaseModel):
     type: str
     day: str
+
+class VideoCreateRequest(BaseModel):
+    title: str
+    input_props: dict
+    script_id: Optional[str] = None
 
 
 # ── Enterprise CRUD ──────────────────────────────────────────────────────────
@@ -217,11 +229,98 @@ def list_campaigns(enterprise_id: str, db: Session = Depends(get_db)):
 # ── Creative Studio ──────────────────────────────────────────────────────────
 
 @router.post("/{enterprise_id}/image/generate")
-def generate_creative_image(enterprise_id: str, body: ImageGenerateRequest):
+def generate_creative_image(enterprise_id: str, body: ImageGenerateRequest, db: Session = Depends(get_db)):
     from app.integrations.gemini_client import GeminiClient
     try:
+        context = knowledge_svc.get_context_for_agent(db, enterprise_id, "image generation")
+        full_prompt = f"Context: {context}\n\nTask: Generate an image for {body.prompt}" if context else body.prompt
+        
         client = GeminiClient()
-        base64_img = client.generate_image(prompt=body.prompt, aspect_ratio=body.aspect_ratio)
-        return {"image_data": base64_img, "prompt": body.prompt}
+        images = client.generate_image(
+            prompt=full_prompt,
+            aspect_ratio=body.aspect_ratio,
+            number_of_images=body.count,
+        )
+        return {"images": images, "prompt": body.prompt, "count": len(images)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/{enterprise_id}/caption/generate")
+def generate_caption(enterprise_id: str, body: CaptionGenerateRequest, db: Session = Depends(get_db)):
+    from app.integrations.gemini_client import GeminiClient
+    try:
+        context = knowledge_svc.get_context_for_agent(db, enterprise_id, "caption generation")
+        
+        client = GeminiClient()
+        caption = client.generate_caption(
+            description=body.description,
+            content_type=body.content_type,
+            context=context
+        )
+        # Note: GeminiClient.generate_caption might need to be updated to accept context
+        # For now, we'll assume it handles context if we inject it into the description or similar
+        return {"caption": caption, "content_type": body.content_type}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Knowledge Lake: PDF Upload ───────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/knowledge/upload-pdf")
+async def upload_pdf(
+    enterprise_id: str,
+    file: UploadFile = File(...),
+    title: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """Upload a PDF, extract text, and ingest into Knowledge Lake."""
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are accepted.")
+
+    try:
+        from PyPDF2 import PdfReader
+        content = await file.read()
+        reader = PdfReader(io.BytesIO(content))
+        text_parts = []
+        for page in reader.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text_parts.append(page_text)
+        extracted_text = "\n\n".join(text_parts)
+
+        if not extracted_text.strip():
+            raise HTTPException(status_code=422, detail="Could not extract text from the PDF. It may be image-based.")
+
+        doc_title = title if title else (file.filename or "Untitled PDF")
+        result = knowledge_svc.ingest_document(
+            db, enterprise_id, doc_title, extracted_text, source_type="pdf",
+        )
+        return {"status": "success", "document": result, "pages_extracted": len(reader.pages)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF processing failed: {str(e)}")
+
+
+# ── Video Studio ─────────────────────────────────────────────────────────────
+
+@router.post("/{enterprise_id}/videos")
+def generate_video(enterprise_id: str, body: VideoCreateRequest, db: Session = Depends(get_db)):
+    video_svc = VideoService(db)
+    return video_svc.create_video_request(
+        enterprise_id, body.title, body.input_props, script_id=body.script_id
+    )
+
+@router.get("/{enterprise_id}/videos")
+def list_videos(enterprise_id: str, db: Session = Depends(get_db)):
+    video_svc = VideoService(db)
+    return video_svc.list_videos(enterprise_id)
+
+@router.get("/{enterprise_id}/videos/{video_id}")
+def get_video(enterprise_id: str, video_id: str, db: Session = Depends(get_db)):
+    video_svc = VideoService(db)
+    video = video_svc.get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return video

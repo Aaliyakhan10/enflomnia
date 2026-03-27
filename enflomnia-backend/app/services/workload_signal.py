@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.models.reel import Reel
 from app.models.workload_signal import WorkloadSignal
 from app.integrations.gemini_client import GeminiClient
+from app.services.knowledge_lake import KnowledgeLakeService
 
 AGENT_NAME = "pulse"
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -21,6 +22,7 @@ class WorkloadSignalService:
 
     def __init__(self):
         self.gemini = GeminiClient()
+        self.knowledge_svc = KnowledgeLakeService()
 
     # ------------------------------------------------------------------ #
     #  Heatmap                                                             #
@@ -35,22 +37,34 @@ class WorkloadSignalService:
             .all()
         )
 
-        matrix = defaultdict(lambda: defaultdict(float))
-        counts = defaultdict(lambda: defaultdict(int))
+        matrix = {}
+        counts = {}
 
         for r in reels:
-            dow = r.published_at.strftime("%A")
-            hour = r.published_at.hour
-            eng = r.total_interactions or ((r.like_count or 0) + (r.comments_count or 0))
-            matrix[dow][hour] += eng
-            counts[dow][hour] += 1
+            dow = str(r.published_at.strftime("%A"))
+            hour = int(r.published_at.hour)
+            eng_val = r.total_interactions or ((r.like_count or 0) + (r.comments_count or 0))
+            if eng_val is None:
+                eng_val = 0
+            eng = float(eng_val)
+
+            if dow not in matrix:
+                matrix[dow] = {}
+                counts[dow] = {}
+            if hour not in matrix[dow]:
+                matrix[dow][hour] = 0.0
+                counts[dow][hour] = 0
+
+            matrix[dow][hour] = matrix[dow][hour] + eng
+            counts[dow][hour] = counts[dow][hour] + 1
 
         heatmap = {}
         for day in DAYS:
-            heatmap[day] = [
-                round(matrix[day][h] / max(counts[day][h], 1), 3)
-                for h in range(24)
-            ]
+            heatmap[day] = []
+            for h in range(24):
+                c = counts.get(day, {}).get(h, 0)
+                m = matrix.get(day, {}).get(h, 0.0)
+                heatmap[day].append(round(m / max(c, 1), 3))  # type: ignore
 
         return heatmap
 
@@ -76,7 +90,10 @@ class WorkloadSignalService:
         heatmap = self.compute_heatmap(db, creator_id)
         pattern_summary = self._summarize_patterns(heatmap)
 
-        signal_data = self._generate_signal(pattern_summary)
+        # Fetch global context
+        context = self.knowledge_svc.get_context_for_agent(db, creator_id, "posting strategy")
+
+        signal_data = self._generate_signal(pattern_summary, context)
 
         signal = WorkloadSignal(
             creator_id=creator_id,
@@ -135,8 +152,8 @@ class WorkloadSignalService:
 
     def _summarize_patterns(self, heatmap: dict) -> dict:
         day_totals = {day: sum(hours) for day, hours in heatmap.items()}
-        ranked_days = sorted(day_totals, key=day_totals.get, reverse=True)
-        top_days = ranked_days[:3]
+        ranked_days = sorted(list(day_totals.keys()), key=lambda k: day_totals[k], reverse=True)
+        top_days = [ranked_days[i] for i in range(min(3, len(ranked_days)))]
 
         all_hours = [score for day in heatmap.values() for score in day]
         avg_engagement = sum(all_hours) / max(len(all_hours), 1)
@@ -150,13 +167,16 @@ class WorkloadSignalService:
         return {
             "top_days": top_days,
             "day_totals": day_totals,
-            "avg_engagement": round(avg_engagement, 3),
+            "avg_engagement": round(float(avg_engagement), 3),  # type: ignore
             "signal_hint": signal_hint,
         }
 
-    def _generate_signal(self, pattern_summary: dict) -> dict:
+    def _generate_signal(self, pattern_summary: dict, context: Optional[str] = None) -> dict:
         """Ask Gemini to generate the workload signal recommendation."""
+        context_block = f"\n\nContext from Knowledge Lake:\n{context}" if context else ""
+        
         prompt = f"""Analyse this creator's engagement patterns and recommend a posting strategy to maximize reach while preventing creator burnout.
+{context_block}
 
 Pattern data:
 - Top engagement days: {pattern_summary['top_days']}
@@ -165,11 +185,11 @@ Pattern data:
 - Day totals: {pattern_summary['day_totals']}
 
 Return ONLY valid JSON with these exact keys:
-{{
+{
   "signal_type": "reduce" | "maintain" | "increase",
   "recommended_posts_per_week": <integer 1-14>,
   "best_days": ["Day1", "Day2", "Day3"],
   "reasoning": "<2-3 sentences, friendly, actionable. Explicitly state WHY these days/cadence are recommended based on the supplied data.>"
-}}"""
+}"""
 
         return self.gemini.invoke_model_json(prompt, agent_name=AGENT_NAME)

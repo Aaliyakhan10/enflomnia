@@ -16,7 +16,9 @@ export default function KnowledgeLakePage() {
     const [results, setResults] = useState<any[] | null>(null);
     const [search, setSearch] = useState("");
     const [ingestForm, setIngestForm] = useState({ title: "", content: "" });
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [showIngest, setShowIngest] = useState(false);
+    const [ingestTab, setIngestTab] = useState<"text" | "pdf">("text");
 
     useEffect(() => { load(); }, []);
 
@@ -27,17 +29,33 @@ export default function KnowledgeLakePage() {
     }
 
     async function handleIngest() {
-        if (!ingestForm.title || !ingestForm.content) return;
-        setIngesting(true);
-        try {
-            await enterpriseApi.ingestKnowledge(DEMO_ENTERPRISE_ID, {
-                title: ingestForm.title, content: ingestForm.content, source_type: "text",
-            });
-            setIngestForm({ title: "", content: "" });
-            setShowIngest(false);
-            await load();
-        } catch { }
-        setIngesting(false);
+        if (ingestTab === "text") {
+            if (!ingestForm.title || !ingestForm.content) return;
+            setIngesting(true);
+            try {
+                await enterpriseApi.ingestKnowledge(DEMO_ENTERPRISE_ID, {
+                    title: ingestForm.title, content: ingestForm.content, source_type: "text",
+                });
+                setIngestForm({ title: "", content: "" });
+                setShowIngest(false);
+                await load();
+            } catch { }
+            setIngesting(false);
+        } else {
+            if (!uploadFile) return;
+            setIngesting(true);
+            try {
+                await enterpriseApi.uploadPDF(DEMO_ENTERPRISE_ID, uploadFile, ingestForm.title);
+                setUploadFile(null);
+                setIngestForm({ title: "", content: "" });
+                setShowIngest(false);
+                await load();
+            } catch (err) {
+                console.error("PDF upload failed", err);
+                alert("Failed to process PDF. Please try again.");
+            }
+            setIngesting(false);
+        }
     }
 
     async function handleSearch() {
@@ -116,25 +134,67 @@ export default function KnowledgeLakePage() {
             {/* Ingest Form */}
             {showIngest && (
                 <div className="card shadow-md border-violet-100/50 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Ingest New Document</h3>
+                    <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
+                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">Ingest New Document</h3>
+                        <div className="flex gap-2">
+                            <button onClick={() => setIngestTab("text")}
+                                className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${ingestTab === "text" ? "bg-violet-100 text-violet-700" : "text-gray-400 hover:bg-gray-50"}`}>
+                                Text / Paste
+                            </button>
+                            <button onClick={() => setIngestTab("pdf")}
+                                className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-colors ${ingestTab === "pdf" ? "bg-violet-100 text-violet-700" : "text-gray-400 hover:bg-gray-50"}`}>
+                                PDF Upload
+                            </button>
+                        </div>
+                    </div>
                     <div className="space-y-4">
                         <div>
-                            <label className="text-[10px] uppercase font-black text-gray-400 mb-1.5 block">Document Title</label>
+                            <label className="text-[10px] uppercase font-black text-gray-400 mb-1.5 block">Document Title (Optional for PDF)</label>
                             <input type="text" placeholder="e.g. Q4 Marketing Strategy"
                                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-violet-300 outline-none"
                                 value={ingestForm.title} onChange={e => setIngestForm(f => ({ ...f, title: e.target.value }))} />
                         </div>
-                        <div>
-                            <label className="text-[10px] uppercase font-black text-gray-400 mb-1.5 block">Content (paste text, report, or data)</label>
-                            <textarea rows={6} placeholder="Paste the full document content here..."
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:border-violet-300 outline-none resize-none"
-                                value={ingestForm.content} onChange={e => setIngestForm(f => ({ ...f, content: e.target.value }))} />
-                        </div>
-                        <button onClick={handleIngest} disabled={ingesting}
-                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md"
+
+                        {ingestTab === "text" ? (
+                            <div>
+                                <label className="text-[10px] uppercase font-black text-gray-400 mb-1.5 block">Content (paste text, report, or data)</label>
+                                <textarea rows={6} placeholder="Paste the full document content here..."
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:border-violet-300 outline-none resize-none"
+                                    value={ingestForm.content} onChange={e => setIngestForm(f => ({ ...f, content: e.target.value }))} />
+                            </div>
+                        ) : (
+                            <div>
+                                <label className="text-[10px] uppercase font-black text-gray-400 mb-1.5 block">Upload PDF File</label>
+                                <div className="relative border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:bg-gray-50 hover:border-violet-200 transition-colors">
+                                    <input type="file" accept=".pdf,application/pdf"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        onChange={e => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                setUploadFile(e.target.files[0]);
+                                            }
+                                        }} />
+                                    <div className="flex flex-col items-center gap-2 pointer-events-none">
+                                        <div className="p-3 bg-violet-50 rounded-full text-violet-500">
+                                            <Upload size={20} />
+                                        </div>
+                                        {uploadFile ? (
+                                            <div className="text-sm font-bold text-violet-700">{uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)</div>
+                                        ) : (
+                                            <>
+                                                <div className="text-sm font-bold text-gray-700">Click to upload or drag and drop</div>
+                                                <div className="text-xs text-gray-400">PDF files only (max 10MB recommended)</div>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <button onClick={handleIngest} disabled={ingesting || (ingestTab === "text" && (!ingestForm.title || !ingestForm.content)) || (ingestTab === "pdf" && !uploadFile)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}>
                             {ingesting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                            {ingesting ? "Indexing with Gemini..." : "Ingest & Index"}
+                            {ingesting ? "Indexing with Gemini..." : ingestTab === "pdf" ? "Upload & Extract PDF" : "Ingest & Index"}
                         </button>
                     </div>
                 </div>

@@ -147,7 +147,7 @@ class ReelAnalysisService:
             delta = datetime.now(timezone.utc) - account.insights_last_generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 reels = self.get_reels(db, creator_id)
-                top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:10]
+                top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:10]  # type: ignore
                 return {
                     "account": account, "reels": top_reels,
                     "overall_insights": account.overall_insights,
@@ -160,7 +160,7 @@ class ReelAnalysisService:
         if not reels:
             return {"error": "No reels found. Sync first."}
 
-        top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:8]
+        top_reels = sorted(reels, key=lambda r: (r.like_count or 0) + (r.comments_count or 0), reverse=True)[:8]  # type: ignore
 
         reel_summaries = []
         for r in top_reels:

@@ -6,11 +6,12 @@ Uses Gemini for classification with Langfuse observability.
 import json
 import re
 import uuid
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
 from app.models.comment import Comment
 from app.integrations.gemini_client import GeminiClient
+from app.services.knowledge_lake import KnowledgeLakeService
 
 
 AGENT_NAME = "aegis"
@@ -22,16 +23,17 @@ class CommentShieldService:
 
     def __init__(self):
         self.gemini = GeminiClient()
+        self.knowledge_svc = KnowledgeLakeService()
 
     # ------------------------------------------------------------------ #
     #  Batch Analysis                                                      #
     # ------------------------------------------------------------------ #
 
     def analyze_batch(
-        self, db: Session, creator_id: str, comments: list[dict]
-    ) -> list[dict]:
+        self, db: Session, creator_id: str, comments: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Classify a batch of up to 20 comments."""
-        comments = comments[:20]
+        comments = comments[:20]  # type: ignore
 
         saved = []
         to_analyze = []
@@ -63,7 +65,7 @@ class CommentShieldService:
                 to_analyze.append(item)
 
         if to_analyze:
-            results = self._classify_direct(to_analyze)
+            results = self._classify_direct(db, creator_id, to_analyze)
 
             for item in results:
                 comment = Comment(
@@ -96,7 +98,7 @@ class CommentShieldService:
     #  Feedback                                                            #
     # ------------------------------------------------------------------ #
 
-    def process_feedback(self, db: Session, comment_id: str, decision: str) -> dict:
+    def process_feedback(self, db: Session, comment_id: str, decision: str) -> Dict[str, Any]:
         """Store creator approve/reject decision."""
         comment = db.query(Comment).filter(Comment.id == comment_id).first()
         if not comment:
@@ -110,7 +112,7 @@ class CommentShieldService:
     #  Summary Stats                                                       #
     # ------------------------------------------------------------------ #
 
-    def get_summary(self, db: Session, creator_id: str) -> dict:
+    def get_summary(self, db: Session, creator_id: str) -> Dict[str, Any]:
         """Returns filtering summary counts for the dashboard."""
         comments = db.query(Comment).filter(Comment.creator_id == creator_id).all()
         total = len(comments)
@@ -127,8 +129,11 @@ class CommentShieldService:
     #  Classification                                                      #
     # ------------------------------------------------------------------ #
 
-    def _classify_direct(self, comments: list[dict]) -> list[dict]:
+    def _classify_direct(self, db: Session, enterprise_id: str, comments: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Classify using bot heuristics + Gemini reasoning."""
+        # Fetch global context
+        context = self.knowledge_svc.get_context_for_agent(db, enterprise_id, "comment analysis")
+        
         results = []
         for c in comments:
             content = c.get("content", "")
@@ -141,7 +146,7 @@ class CommentShieldService:
                 continue
 
             # Step 2: Gemini spam + engagement scoring
-            classification = self._gemini_classify(content)
+            classification = self._gemini_classify(content, context)
             results.append({
                 **c,
                 "category": classification["category"],
@@ -153,8 +158,8 @@ class CommentShieldService:
 
     def _bot_heuristic_score(self, content: str, author: str) -> float:
         """Lightweight bot detection based on text patterns."""
-        score = 0.0
-        emoji_count = len(re.findall(r'[\U0001F300-\U0001FFFF]', content))
+        score: float = 0.0
+        emoji_count: int = len(re.findall(r'[\U0001F300-\U0001FFFF]', content))
         if emoji_count > 5:
             score += 0.3
         if re.search(r'(.)\1{4,}', content):
@@ -170,9 +175,12 @@ class CommentShieldService:
             score += 0.2
         return min(score, 1.0)
 
-    def _gemini_classify(self, content: str) -> dict:
+    def _gemini_classify(self, content: str, context: Optional[str] = None) -> Dict[str, Any]:
         """Use Gemini to classify spam/safe/high-value and score engagement."""
+        context_block = f"\n\nContext from Knowledge Lake:\n{context}" if context else ""
+        
         prompt = f"""Classify this comment. Return JSON only with keys: category (spam|safe|high-value), confidence (0-1), engagement_score (0-1).
+{context_block}
 
 Comment: "{content}"
 

@@ -47,7 +47,11 @@ class ScriptService:
                 res["cached"] = True
                 return res
 
-        raw = self._call_gemini(topic, brand_name, brand_brief, tone)
+        from app.services.knowledge_lake import KnowledgeLakeService
+        knowledge_lake = KnowledgeLakeService()
+        knowledge_context = knowledge_lake.get_context_for_agent(db, creator_id, topic)
+
+        raw = self._call_gemini(topic, brand_name, brand_brief, tone, knowledge_context)
 
         script = Script(
             id=str(uuid.uuid4()),
@@ -81,7 +85,7 @@ class ScriptService:
 
     # ── Private helpers ─────────────────────────────────────────────────────
 
-    def _call_gemini(self, topic, brand_name, brand_brief, tone) -> dict:
+    def _call_gemini(self, topic, brand_name, brand_brief, tone, knowledge_context) -> dict:
         brand_section = ""
         if brand_name:
             brand_section = f"\nBrand: {brand_name}"
@@ -92,6 +96,9 @@ class ScriptService:
 
 Topic: {topic}{brand_section}
 Tone: {tone}
+
+KNOWLEDGE BASE CONTEXT (Use this to inform the script):
+{knowledge_context if knowledge_context else "No additional context."}
 
 Rules:
 1. The Hook MUST be under 3 seconds (max 12 words) and instantly create a curiosity gap or relatable pain point.

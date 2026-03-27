@@ -6,7 +6,7 @@ Google Drive, Salesforce, and Slack integrations.
 import uuid
 import json
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 
 from app.models.data_connector import DataConnector
@@ -17,7 +17,7 @@ from app.integrations.gemini_client import GeminiClient
 AGENT_NAME = "connector"
 
 # Simulated data per connector type (for hackathon demo)
-DEMO_DATA = {
+DEMO_DATA: Dict[str, List[Dict[str, str]]] = {
     "gdrive": [
         {"title": "Q4 Product Strategy", "content": "Our Q4 strategy focuses on expanding into the APAC market with localized content. Key product updates include the new Enterprise Dashboard, AI-powered analytics suite, and real-time collaboration features. Target launch: November 15. Budget allocation: 40% digital, 30% events, 30% partnerships."},
         {"title": "Brand Voice Guidelines 2024", "content": "Tone: Professional yet approachable. Always use active voice. Avoid jargon unless addressing technical audiences. Brand colors: #7c3aed (primary), #f59e0b (accent). Never use superlatives without data backing. Compliance: all claims must be verifiable."},
@@ -42,8 +42,8 @@ class ConnectorService:
     def register_connector(
         self, db: Session, enterprise_id: str,
         connector_type: str, display_name: str = "",
-        config: dict = None, sync_frequency: str = "hourly",
-    ) -> dict:
+        config: Optional[Dict[str, Any]] = None, sync_frequency: str = "hourly",
+    ) -> Dict[str, Any]:
         """Register a new managed connector."""
         connector = DataConnector(
             id=str(uuid.uuid4()),
@@ -70,7 +70,7 @@ class ConnectorService:
         db.refresh(connector)
         return self._to_dict(connector)
 
-    def sync_connector(self, db: Session, connector_id: str) -> dict:
+    def sync_connector(self, db: Session, connector_id: str) -> Dict[str, Any]:
         """
         Simulate a sync: pull demo data from the connector source
         and ingest it into the Knowledge Lake.
@@ -133,13 +133,13 @@ class ConnectorService:
         db.refresh(connector)
         return {**self._to_dict(connector), "documents_synced_this_run": synced}
 
-    def list_connectors(self, db: Session, enterprise_id: str) -> List[dict]:
+    def list_connectors(self, db: Session, enterprise_id: str) -> List[Dict[str, Any]]:
         connectors = db.query(DataConnector).filter(
             DataConnector.enterprise_id == enterprise_id
         ).order_by(DataConnector.created_at.desc()).all()
         return [self._to_dict(c) for c in connectors]
 
-    def _to_dict(self, c: DataConnector) -> dict:
+    def _to_dict(self, c: DataConnector) -> Dict[str, Any]:
         return {
             "id": c.id,
             "enterprise_id": c.enterprise_id,

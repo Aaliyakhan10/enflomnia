@@ -75,5 +75,4 @@ By professionalizing the **90% administrative rot**, Enflomnia frees the human s
 
 ---
 
-**Architect:** [Your Name]  
 **Technical Foundation:** Google Cloud, Gemini Intelligence, Remotion SDK. 

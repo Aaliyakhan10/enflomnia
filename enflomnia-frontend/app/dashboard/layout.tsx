@@ -19,7 +19,8 @@ const coreNav = [
 
 const creativeNav = [
     { href: "/dashboard/creative/image", label: "Image Studio", icon: Image },
-    { href: "/dashboard/accelerator/scripts", label: "Video Studio", icon: Video },
+    { href: "/dashboard/creative/video", label: "Video Studio", icon: Video },
+    { href: "/dashboard/vault/knowledge", label: "Document Studio", icon: ScrollText },
 ];
 
 const aiNav = [
@@ -143,9 +144,9 @@ function DashboardSidebar() {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <AccountProvider>
-            <div className="flex min-h-screen bg-gray-50">
+            <div className="flex h-screen overflow-hidden bg-gray-50">
                 <DashboardSidebar />
-                <main className="flex-1 overflow-auto">{children}</main>
+                <main className="flex-1 overflow-auto min-w-0">{children}</main>
             </div>
         </AccountProvider>
     );

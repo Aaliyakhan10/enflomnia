@@ -1,8 +1,18 @@
 import axios from "axios";
+import { supabase } from "./supabase";
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
     headers: { "Content-Type": "application/json" },
+});
+
+// Add interceptor to include Supabase JWT
+api.interceptors.request.use(async (config) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+    }
+    return config;
 });
 
 // ── Instagram ─────────────────────────────────────────────────────────────
@@ -197,9 +207,23 @@ export const enterpriseApi = {
     getSovereignty: (enterpriseId: string) =>
         api.get(`/api/enterprise/${enterpriseId}/sovereignty`),
 
-    // Creative Studio (Images)
-    generateImage: (enterpriseId: string, data: { prompt: string; aspect_ratio?: string }) =>
+    // Creative Studio (Images — multi-image + captions)
+    generateImage: (enterpriseId: string, data: { prompt: string; aspect_ratio?: string; count?: number }) =>
         api.post(`/api/enterprise/${enterpriseId}/image/generate`, data),
+
+    // Caption Generation (for video, image, post)
+    generateCaption: (enterpriseId: string, data: { description: string; content_type?: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/caption/generate`, data),
+
+    // PDF Upload
+    uploadPDF: (enterpriseId: string, file: File, title?: string) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (title) formData.append('title', title);
+        return api.post(`/api/enterprise/${enterpriseId}/knowledge/upload-pdf`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+    },
 
     // Bark: Compliance Gate
     auditContent: (enterpriseId: string, data: { content: string; content_type?: string }) =>

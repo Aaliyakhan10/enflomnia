@@ -8,14 +8,14 @@ class ComplianceService:
     def __init__(self, db: Session):
         self.db = db
         self.gemini = GeminiClient()
-        self.guard = DataGuardService(db)
+        self.guard = DataGuardService()
 
     def audit_content(self, enterprise_id: str, content: str, content_type: str) -> dict:
         """
         The Aegis 'Bark' Check: Scans visual or text content against the Enterprise's Brand DNA.
         """
         # 1. Log the audit request for compliance tracking
-        self.guard.log_access(enterprise_id, f"Aegis Compliance Scan: {content_type}", "Aegis")
+        self.guard.audit_log(self.db, enterprise_id, action=f"Aegis Compliance Scan: {content_type}", agent_name="Aegis")
 
         # 2. Retrieve Brand DNA and Legal Facts
         facts = self.db.query(FactRecord).filter(

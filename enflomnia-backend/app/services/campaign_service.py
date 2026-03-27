@@ -12,6 +12,9 @@ class CampaignService:
         self.gemini = GeminiClient()
 
     def generate_campaign(self, enterprise_id: str, goal: str) -> CampaignStrategy:
+        from app.services.knowledge_lake import KnowledgeLakeService
+        knowledge_lake = KnowledgeLakeService()
+        knowledge_context = knowledge_lake.get_context_for_agent(self.db, enterprise_id, goal)
         # 1. Read the facts (Single-source truth ingested from connected docs)
         facts = self.db.query(FactRecord).filter(
             FactRecord.enterprise_id == enterprise_id,
@@ -31,7 +34,10 @@ Your job is to read the verified facts from the company's Knowledge Lake and des
 
 ENTERPRISE GOAL: {goal}
 
-ENTERPRISE KNOWLEDGE/FACTS (DO NOT HALLUCINATE FEATURES OUTSIDE OF THESE FACTS):
+ENTERPRISE KNOWLEDGE LAKE (RELEVANT DOCUMENTS):
+{knowledge_context if knowledge_context else "No specific documents found."}
+
+ENTERPRISE FACTS (DO NOT HALLUCINATE FEATURES OUTSIDE OF THESE FACTS):
 {facts_context}
 
 INSTRUCTIONS:
