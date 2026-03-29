@@ -25,7 +25,8 @@ class VideoService:
         title: str, 
         input_props: dict, 
         script_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        video_url: Optional[str] = None,
+        status: str = "pending",
         user_email: str = None
     ) -> Video:
         """Create a new video record and trigger the Remotion render."""
@@ -36,7 +37,8 @@ class VideoService:
             title=title,
             script_id=script_id,
             input_props=input_props,
-            status="pending"
+            video_url=video_url,
+            status=status
         )
         self.db.add(video)
         self.db.commit()

@@ -8,6 +8,9 @@ from typing import Optional
 
 from app.database import get_db
 from app.dependencies import get_current_user
+from app.config import get_settings
+
+settings = get_settings()
 from app.schemas.enterprise import (
     EnterpriseCreate, EnterpriseProfileUpdate, ConnectorCreate, KnowledgeIngest, 
     FactUpsert, ContentCheck, FactsCSVImport, ImageGenerateRequest, 
@@ -38,6 +41,37 @@ def get_doc_svc(db: Session = Depends(get_db)) -> DocumentService:
     return DocumentService(db)
 
 # ── Enterprise CRUD ──────────────────────────────────────────────────────────
+
+@router.get("/profile/me")
+def get_my_enterprise(
+    db: Session = Depends(get_db), 
+    user: dict = Depends(get_current_user)
+):
+    """Dynamically resolves the enterprise profile for the logged-in user."""
+    svc = EnterpriseService(db)
+    enterprise = svc.get_enterprise_by_email(user.get("email"))
+    
+    # Enrich with demo/debug credentials if requested
+    profile_data = {
+        "id": enterprise.id,
+        "name": enterprise.name,
+        "industry": enterprise.industry,
+        "owner_email": enterprise.owner_email,
+        "primary_product": enterprise.primary_product,
+        "target_audience": enterprise.target_audience,
+        "brand_voice": enterprise.brand_voice,
+        "main_objectives": enterprise.main_objectives,
+        "brand_guidelines": enterprise.brand_guidelines,
+        "compliance_rules": enterprise.compliance_rules,
+        "data_sovereignty_region": enterprise.data_sovereignty_region,
+    }
+    
+    if settings.debug:
+        profile_data["demo_credentials"] = {
+            "instagram_access_token": settings.instagram_access_token
+        }
+        
+    return profile_data
 
 @router.post("/register")
 def register_enterprise(body: EnterpriseCreate, ent_svc: EnterpriseService = Depends(get_ent_svc)):
@@ -194,7 +228,10 @@ def generate_video(
     svc = VideoService(db)
     return svc.create_video_request(
         enterprise_id, body.title, body.input_props, 
-        script_id=body.script_id, user_email=current_user.get("email")
+        script_id=body.script_id, 
+        video_url=body.video_url,
+        status=body.status or "completed",
+        user_email=current_user.get("email")
     )
 
 @router.get("/{enterprise_id}/videos")

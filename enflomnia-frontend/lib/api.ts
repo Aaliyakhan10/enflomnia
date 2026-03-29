@@ -39,17 +39,17 @@ export const instagramApi = {
 
 // ── Intelligence (Phase 2) ────────────────────────────────────────────────
 export const intelligenceApi = {
-    getSuggestions: (creatorId: string) =>
-        api.get(`/api/v1/intelligence/content-suggestions/${creatorId}`),
+    getSuggestions: (creatorId: string, force = false) =>
+        api.get(`/api/v1/intelligence/content-suggestions/${creatorId}${force ? '?force=true' : ''}`),
 
     getFeedback: (creatorId: string, reelId: string) =>
         api.get(`/api/v1/intelligence/reel-feedback/${creatorId}/${reelId}`),
 
-    getCompetitorsAndTrends: (creatorId: string, niche = "lifestyle") =>
-        api.get(`/api/v1/intelligence/competitors-trends/${creatorId}?niche=${niche}`),
+    getCompetitorsAndTrends: (creatorId: string, niche = "lifestyle", force = false) =>
+        api.get(`/api/v1/intelligence/competitors-trends/${creatorId}?niche=${niche}${force ? '&force=true' : ''}`),
 
-    simulateGrowth: (creatorId: string) =>
-        api.get(`/api/v1/intelligence/growth-simulation/${creatorId}`),
+    simulateGrowth: (creatorId: string, force = false) =>
+        api.get(`/api/v1/intelligence/growth-simulation/${creatorId}${force ? '?force=true' : ''}`),
 };
 
 // ── Reach ─────────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ export const enterpriseApi = {
         api.post(`/api/enterprise/${enterpriseId}/compliance/audit`, data),
 
     // Fruit: Publish to Social
-    publishContent: (enterpriseId: string, data: { type: string; day: string }) =>
+    publishContent: (enterpriseId: string, data: { type: string; day: string; video_url?: string; caption?: string | null }) =>
         api.post(`/api/enterprise/${enterpriseId}/publish`, data),
 
     // Campaigns (Strategist)
@@ -247,6 +247,9 @@ export const enterpriseApi = {
         api.get(`/api/enterprise/${enterpriseId}/magic-scan-persona`),
 
     // Profile Management
+    getMyProfile: () =>
+        api.get("/api/enterprise/profile/me"),
+
     getProfile: (enterpriseId: string) =>
         api.get(`/api/enterprise/${enterpriseId}`),
 
@@ -254,7 +257,7 @@ export const enterpriseApi = {
         api.patch(`/api/enterprise/${enterpriseId}/profile`, data),
 
     // Video Studio
-    generateVideo: (enterpriseId: string, data: { title: string; input_props: any; script_id?: string }) =>
+    generateVideo: (enterpriseId: string, data: { title: string; input_props: any; script_id?: string; video_url?: string; status?: string }) =>
         api.post(`/api/enterprise/${enterpriseId}/videos`, data),
 
     listVideos: (enterpriseId: string) =>

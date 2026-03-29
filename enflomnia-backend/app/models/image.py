@@ -11,7 +11,8 @@ class GeneratedImage(Base):
     enterprise_id = Column(String, nullable=False, index=True)
     user_email = Column(String, nullable=True, index=True)
     prompt = Column(Text, nullable=False)
-    image_data = Column(Text, nullable=False) # Base64 or URL
+    image_data = Column(Text, nullable=True) # Backward compatibility
+    image_url = Column(String(512), nullable=True)
     caption = Column(Text, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())

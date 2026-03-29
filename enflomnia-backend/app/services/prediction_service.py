@@ -24,9 +24,10 @@ class PredictionService:
 
     # ── 1. Content Suggestions ──────────────────────────────────────────────
 
-    def generate_content_suggestions(self, db: Session, creator_id: str, context: str = "") -> List[Dict[str, Any]]:
+    def generate_content_suggestions(self, db: Session, creator_id: str, context: str = "", force_refresh: bool = False) -> List[Dict[str, Any]]:
         cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == "suggestions").first()
-        if cached and not context:  # Only use cache if no fresh context is provided
+        
+        if cached and not force_refresh:
             delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 return cached.content
@@ -81,10 +82,11 @@ Return ONLY valid JSON:
 
     # ── 2. Reel Feedback ────────────────────────────────────────────────────
 
-    def analyze_reel_feedback(self, db: Session, creator_id: str, reel_id: str) -> Dict[str, str]:
+    def analyze_reel_feedback(self, db: Session, creator_id: str, reel_id: str, force_refresh: bool = False) -> Dict[str, str]:
         cache_key = f"reel_feedback_{reel_id}"
         cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == cache_key).first()
-        if cached:
+        
+        if cached and not force_refresh:
             delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 return cached.content
@@ -116,10 +118,11 @@ Return ONLY valid JSON:
 
     # ── 3. Competitors & Trends ─────────────────────────────────────────────
 
-    def find_competitors_and_trends(self, db: Session, creator_id: str, niche: str) -> Dict[str, Any]:
+    def find_competitors_and_trends(self, db: Session, creator_id: str, niche: str, force_refresh: bool = False) -> Dict[str, Any]:
         cache_key = f"trends_{niche}"
         cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == cache_key).first()
-        if cached:
+        
+        if cached and not force_refresh:
             delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 return cached.content
@@ -151,9 +154,10 @@ Return ONLY valid JSON:
 
     # ── 4. Growth Simulation ────────────────────────────────────────────────
 
-    def simulate_growth(self, db: Session, creator_id: str) -> Dict[str, Any]:
+    def simulate_growth(self, db: Session, creator_id: str, force_refresh: bool = False) -> Dict[str, Any]:
         cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == "growth_simulation").first()
-        if cached:
+        
+        if cached and not force_refresh:
             delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 return cached.content

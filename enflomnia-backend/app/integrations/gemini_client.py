@@ -199,9 +199,10 @@ Return ONLY the caption text, no quotes or extra formatting.""",
             return f"AI-generated creative based on: {prompt[:80]}"
 
     def generate_caption(self, description: str, content_type: str = "video",
-                         agent_name: str = "caption_gen") -> str:
+                         context: str = "", agent_name: str = "caption_gen") -> str:
         """Generate a caption for any content (video, image, etc.) given a description."""
         try:
+            system_instruction = f"Context: {context}" if context else None
             caption = self.invoke_model(
                 f"""Generate an engaging, professional social-media caption for a {content_type}.
 Description: {description}
@@ -210,6 +211,7 @@ Requirements:
 - Include 2-3 relevant hashtags
 - Be compelling and brand-appropriate
 Return ONLY the caption text.""",
+                system=system_instruction,
                 max_tokens=200, agent_name=agent_name,
             )
             return caption.strip()

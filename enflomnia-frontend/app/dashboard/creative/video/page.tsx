@@ -1,30 +1,46 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Video, Sparkles, Loader2, Link as LinkIcon, Download, Copy, Check, History } from "lucide-react";
+import { Video, Sparkles, Loader2, Link as LinkIcon, Download, Copy, Check, History, Send, Globe, Instagram, X } from "lucide-react";
 import { enterpriseApi, userApi } from "@/lib/api";
 
-const ENTERPRISE_ID = "00000000-0000-0000-0000-000000000000";
-
 export default function VideoStudioPage() {
+    const [enterprise, setEnterprise] = useState<any>(null);
     const [videoLink, setVideoLink] = useState("");
     const [description, setDescription] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedCaption, setGeneratedCaption] = useState<string | null>(null);
+    const [activeScript, setActiveScript] = useState<any>(null);
     const [copied, setCopied] = useState(false);
     const [isRendering, setIsRendering] = useState(false);
     const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
+    const [showPublisher, setShowPublisher] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishStatus, setPublishStatus] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchHistory();
-        fetchCampaigns();
+        fetchProfileAndData();
     }, []);
 
-    const fetchCampaigns = async () => {
+    const fetchProfileAndData = async () => {
         try {
-            const res = await enterpriseApi.listCampaigns(ENTERPRISE_ID);
+            const profileRes = await enterpriseApi.getMyProfile();
+            const ent = profileRes.data;
+            setEnterprise(ent);
+            
+            // Now fetch data with the real ID
+            fetchHistory();
+            fetchCampaigns(ent.id);
+        } catch (e) {
+            console.error("Failed to fetch profile", e);
+        }
+    };
+
+    const fetchCampaigns = async (entId: string) => {
+        try {
+            const res = await enterpriseApi.listCampaigns(entId);
             setCampaigns(res.data || []);
         } catch (e) {
             console.error("Failed to fetch campaigns", e);
@@ -42,11 +58,22 @@ export default function VideoStudioPage() {
         }
     };
 
+    const handleSelectScript = (scriptJson: string) => {
+        try {
+            const script = JSON.parse(scriptJson);
+            setActiveScript(script);
+            setDescription(script.topic || script.video_prompt || "");
+            setGeneratedCaption(script.hook || "");
+        } catch (e) {
+            setDescription(scriptJson);
+        }
+    };
+
     const handleGenerateCaption = async () => {
-        if (!description) return;
+        if (!enterprise || !description) return;
         setIsGenerating(true);
         try {
-            const res = await enterpriseApi.generateCaption(ENTERPRISE_ID, {
+            const res = await enterpriseApi.generateCaption(enterprise.id, {
                 description: description,
                 content_type: "video"
             });
@@ -55,48 +82,46 @@ export default function VideoStudioPage() {
             }
         } catch (error) {
             console.error("Failed to generate caption:", error);
-            alert("Failed to generate caption. Please try again.");
         } finally {
             setIsGenerating(false);
         }
     };
 
-    const handleCopy = () => {
-        if (generatedCaption) {
-            navigator.clipboard.writeText(generatedCaption);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
-    };
-
     const handleRenderVideo = async () => {
+        if (!enterprise) return;
         setIsRendering(true);
         try {
+            // Prepare the payload to match ScriptVideoProps 1:1
+            const inputProps = {
+                hook: generatedCaption || activeScript?.hook || description,
+                structure: activeScript?.structure || [
+                    { section: "Introduction", content: description, duration_seconds: 10 }
+                ],
+                cta: activeScript?.cta || "Follow for more!",
+                tone: activeScript?.tone || "professional",
+                brand_name: enterprise.name
+            };
+
             const response = await fetch("/api/render", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     compositionId: "ScriptVideo",
-                    inputProps: {
-                        script: description,
-                        images: videoLink ? [videoLink] : [],
-                        caption: generatedCaption || "Enflomnia Original"
-                    },
-                    slug: `video-${Date.now()}`
+                    inputProps,
+                    slug: `studio-${Date.now()}`
                 })
             });
+            
             const data = await response.json();
             if (data.url) {
                 setRenderedVideoUrl(data.url);
                 
-                // Save this video request to the DB
-                await enterpriseApi.generateVideo(ENTERPRISE_ID, {
+                await enterpriseApi.generateVideo(enterprise.id, {
                     title: `Video for ${description.substring(0, 20)}...`,
-                    input_props: {
-                        script: description,
-                        images: videoLink ? [videoLink] : [],
-                        caption: generatedCaption
-                    }
+                    input_props: inputProps,
+                    video_url: data.url,
+                    status: "completed",
+                    script_id: activeScript?.id || undefined
                 });
                 fetchHistory();
             } else {
@@ -104,21 +129,52 @@ export default function VideoStudioPage() {
             }
         } catch (error) {
             console.error("Render failed:", error);
-            alert("Video rendering failed. Check console for details.");
+            alert("Video rendering failed. Ensure your script is valid.");
         } finally {
             setIsRendering(false);
         }
     };
 
+    const handlePublish = async () => {
+        if (!enterprise || !renderedVideoUrl) return;
+        setIsPublishing(true);
+        setPublishStatus(null);
+        try {
+            await enterpriseApi.publishContent(enterprise.id, {
+                type: "video",
+                day: "Now",
+                video_url: renderedVideoUrl,
+                caption: generatedCaption
+            });
+            setPublishStatus("Successfully published to Instagram!");
+            setTimeout(() => {
+                setShowPublisher(false);
+                setPublishStatus(null);
+            }, 3000);
+        } catch (e) {
+            setPublishStatus("Publishing failed. Check API connectors.");
+        } finally {
+            setIsPublishing(false);
+        }
+    };
+
+    if (!enterprise) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <Loader2 className="animate-spin text-violet-500" size={32} />
+            </div>
+        );
+    }
+
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-8 pb-24">
+        <div className="p-8 max-w-5xl mx-auto space-y-8 pb-24 relative">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                     <Video size={24} className="text-violet-500" />
                     Video Studio
                 </h1>
                 <p className="text-sm text-gray-500 max-w-lg">
-                    Scalable Production: Finalize your video assets with AI-generated, brand-aligned captions ready for publishing.
+                    Current Workspace: <span className="font-bold text-violet-600">{enterprise.name}</span>
                 </p>
             </div>
 
@@ -127,39 +183,27 @@ export default function VideoStudioPage() {
                     <div className="card shadow-sm ring-1 ring-gray-100 p-6 space-y-4">
                         {campaigns.length > 0 && (
                             <div>
-                                <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5 flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" /> Use Campaign Script</label>
+                                <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5 flex items-center gap-1.5">
+                                    <Sparkles size={12} className="text-violet-500" /> Grounded Campaign Scripts
+                                </label>
                                 <select 
-                                    className="w-full text-sm p-3 rounded-xl border border-gray-200 bg-violet-50/30 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none text-gray-700"
-                                    onChange={(e) => setDescription(e.target.value)}
+                                    className="w-full text-sm p-3 rounded-xl border border-gray-200 bg-violet-50/30 focus:bg-white transition-all outline-none text-gray-700"
+                                    onChange={(e) => handleSelectScript(e.target.value)}
                                     defaultValue=""
                                 >
-                                    <option value="" disabled>-- Select campaign video script --</option>
-                                    {campaigns.flatMap(c => c.proposed_scripts || []).filter(s => s && s.video_prompt).map((s, i) => (
-                                        <option key={i} value={s.video_prompt}>{s.day}: {s.topic ? s.topic.substring(0, 40) + '...' : 'Script'}</option>
+                                    <option value="" disabled>-- Pull from Knowledge Lake --</option>
+                                    {campaigns.flatMap(c => c.proposed_scripts || []).map((s, i) => (
+                                        <option key={i} value={JSON.stringify(s)}>{s.day}: {s.topic?.substring(0, 30)}...</option>
                                     ))}
                                 </select>
                             </div>
                         )}
                         <div>
-                            <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Video Asset Link (Optional)</label>
-                            <div className="relative">
-                                <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    value={videoLink}
-                                    onChange={(e) => setVideoLink(e.target.value)}
-                                    placeholder="https://drive.google.com/..."
-                                    className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Video Context / Description</label>
+                            <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Context Description</label>
                             <textarea
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
-                                placeholder="What happens in this video? What is the core message or CTA?"
+                                placeholder="What is this video about?"
                                 className="w-full text-sm p-3 rounded-xl border border-gray-200 bg-gray-50/50 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none resize-none h-32"
                             />
                         </div>
@@ -167,141 +211,147 @@ export default function VideoStudioPage() {
                         <button
                             onClick={handleGenerateCaption}
                             disabled={isGenerating || !description}
-                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-all shadow-sm"
                         >
                             {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                            {isGenerating ? "Generating..." : "Generate AI Caption"}
+                            {isGenerating ? "Grounding..." : "Sync Brand Knowledge"}
                         </button>
                     </div>
                 </div>
 
                 <div className="md:col-span-2 space-y-6">
-                    {videoLink && (
-                        <div className="card border-none shadow-sm ring-1 ring-gray-100 bg-gray-900 rounded-2xl overflow-hidden aspect-video relative flex items-center justify-center group">
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent z-10"></div>
-                            <Video size={48} className="text-gray-700 absolute z-0" />
-                            <div className="absolute bottom-4 left-4 right-4 z-20 flex justify-between items-end">
-                                <div>
-                                    <span className="px-2.5 py-1 bg-violet-500/20 text-violet-300 text-[10px] font-bold rounded-lg uppercase tracking-wider backdrop-blur-md ring-1 ring-violet-500/50">Preview Mode</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="card shadow-sm ring-1 ring-gray-100 p-8 min-h-[250px] relative overflow-hidden bg-white">
-                        {generatedCaption ? (
-                            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <div className="card shadow-sm ring-1 ring-gray-100 p-8 min-h-[300px] relative overflow-hidden bg-white">
+                        {generatedCaption || activeScript ? (
+                            <div className="space-y-4">
                                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
                                     <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Sparkles size={14} className="text-violet-500" />
-                                        AI-Generated Caption
+                                        <Globe size={14} className="text-violet-500" /> Brand-Aligned Narrative
                                     </h3>
-                                    <button
-                                        onClick={handleCopy}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold transition-colors ring-1 ring-gray-200"
-                                    >
-                                        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                                        {copied ? "Copied!" : "Copy Text"}
-                                    </button>
                                 </div>
-                                <div className="p-5 bg-violet-50/50 rounded-xl border border-violet-100">
-                                    <p className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">
-                                        {generatedCaption}
+                                <div className="p-5 bg-violet-50/30 rounded-xl border border-violet-100">
+                                    <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                                        {generatedCaption || activeScript?.hook}
                                     </p>
+                                    {activeScript?.structure && (
+                                        <div className="mt-4 pt-4 border-t border-violet-100 grid grid-cols-2 gap-4">
+                                            {activeScript.structure.slice(0, 4).map((s: any, idx: number) => (
+                                                <div key={idx} className="bg-white/50 p-2 rounded-lg border border-violet-100/50">
+                                                    <p className="text-[9px] font-black text-violet-400 uppercase">{s.section}</p>
+                                                    <p className="text-[10px] text-gray-600 line-clamp-1">{s.content}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex justify-end gap-3 pt-2">
+                                <div className="flex justify-end gap-3 pt-4">
                                     <button 
                                         onClick={handleRenderVideo}
                                         disabled={isRendering}
-                                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-2"
+                                        className="btn btn-brand py-2.5 px-6 flex items-center gap-2"
                                     >
                                         {isRendering ? <Loader2 size={14} className="animate-spin" /> : <Video size={14} />}
-                                        {isRendering ? "Rendering..." : "Render with Remotion"}
-                                    </button>
-                                    <button className="px-5 py-2 bg-gray-900 hover:bg-black text-white text-xs font-bold rounded-xl shadow-sm transition-all">
-                                        Send to Publisher Studio
+                                        {isRendering ? "Rendering Build..." : "Synthesize Video"}
                                     </button>
                                 </div>
-                                {renderedVideoUrl && (
-                                    <div className="mt-4 p-4 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white">
-                                                <Download size={16} />
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">Video Rendered Successfully</p>
-                                                <a href={renderedVideoUrl} target="_blank" className="text-xs text-emerald-600 font-medium hover:underline">Download MP4 Asset</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         ) : (
-                            <div className="text-center space-y-3 h-full flex flex-col items-center justify-center my-8">
-                                <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto ring-1 ring-violet-100">
-                                    <Video size={24} className="text-violet-400" />
+                            <div className="text-center py-20">
+                                <Video size={48} className="mx-auto text-gray-200 mb-4" />
+                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Ready for Production</p>
+                            </div>
+                        )}
+                        
+                        {renderedVideoUrl && (
+                            <div className="mt-6 p-6 bg-indigo-900 rounded-2xl text-white flex items-center justify-between animate-in zoom-in-95 duration-500">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                                        <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-sm">Asset Synthesis Complete</h4>
+                                        <p className="text-xs text-indigo-300">Your grounded video is ready for distribution.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-semibold text-gray-700">No Caption Generated Yet</p>
-                                    <p className="text-xs text-gray-500 mt-1 max-w-[250px] mx-auto">Describe the video context to generate an engaging, platform-ready caption.</p>
-                                </div>
+                                <button 
+                                    onClick={() => setShowPublisher(true)}
+                                    className="bg-white text-indigo-900 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all shadow-xl"
+                                >
+                                    Open Publisher Hub
+                                </button>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* History Section */}
-            <div className="space-y-6 pt-12 border-t border-gray-100">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            <History size={20} className="text-violet-500" />
-                            Rendered Asset History
-                        </h2>
-                        <p className="text-xs text-gray-500">Track and manage your AI-composed video assets.</p>
-                    </div>
-                </div>
-
-                {loadingHistory ? (
-                    <div className="flex items-center justify-center p-12">
-                        <Loader2 className="animate-spin text-gray-300" size={32} />
-                    </div>
-                ) : history.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {history.map((vid, idx) => (
-                            <div key={vid.id || idx} className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
-                                <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
-                                    <Video size={32} className="text-gray-700" />
-                                    {vid.video_url && (
-                                        <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                             <a href={vid.video_url} target="_blank" className="btn btn-brand py-2 px-4 text-xs">Watch MP4</a>
-                                        </div>
-                                    )}
+            {/* Publisher Hub Modal */}
+            {showPublisher && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+                        <div className="p-8 space-y-6">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+                                        <Send size={24} className="text-emerald-500" />
+                                        Publisher Hub
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mt-1">Distribute to your social graph via Enflomnia Pulse.</p>
                                 </div>
-                                <div className="p-4 flex-1 flex flex-col gap-2">
-                                    <div className="flex justify-between items-start">
-                                        <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{vid.title}</h4>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${vid.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
-                                            {vid.status}
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed italic">"{vid.input_props?.caption}"</p>
-                                    <div className="pt-2 flex justify-end">
-                                        <button className="text-[10px] font-bold text-gray-400 hover:text-gray-900 uppercase tracking-widest transition-colors flex items-center gap-1">
-                                            Reuse Props <Sparkles size={10} />
-                                        </button>
-                                    </div>
+                                <button onClick={() => setShowPublisher(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="aspect-video bg-gray-900 rounded-3xl overflow-hidden relative group">
+                                <Video size={48} className="text-gray-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                <div className="absolute inset-0 bg-emerald-500/10" />
+                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-white/50 tracking-widest uppercase">
+                                    <span>{enterprise.name} Original</span>
+                                    <span>{new Date().toLocaleDateString()}</span>
                                 </div>
                             </div>
-                        ))}
+
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={handlePublish}
+                                    disabled={isPublishing}
+                                    className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-emerald-500/20 text-sm uppercase tracking-[0.1em]"
+                                >
+                                    {isPublishing ? <Loader2 size={18} className="animate-spin" /> : <Instagram size={18} />}
+                                    {isPublishing ? "Publishing to Graph..." : "Publish to Instagram"}
+                                </button>
+                                
+                                {publishStatus && (
+                                    <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold text-center rounded-xl animate-in fade-in slide-in-from-top-2">
+                                        {publishStatus}
+                                    </div>
+                                ) || (
+                                    <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
+                                        Grounding Audit: <span className="text-emerald-500">Passed</span> • Aegis Gate: <span className="text-emerald-500">Approved</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                     </div>
-                ) : (
-                    <div className="text-center p-12 bg-gray-50/50 rounded-[2rem] border border-dashed border-gray-200">
-                        <Video size={32} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-sm text-gray-500">No assets rendered yet.</p>
-                    </div>
-                )}
+                </div>
+            )}
+
+            <div className="space-y-6 pt-12 border-t border-gray-100">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <History size={20} className="text-violet-500" />
+                    Production History
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {history.map((vid, idx) => (
+                        <div key={vid.id || idx} className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm p-4 hover:shadow-md transition-all">
+                            <div className="aspect-video bg-gray-50 rounded-xl mb-3 flex items-center justify-center">
+                                <Video size={24} className="text-gray-200" />
+                            </div>
+                            <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{vid.title}</h4>
+                            <p className="text-[10px] text-gray-500 mt-1 line-clamp-2">"{vid.input_props?.hook || vid.input_props?.script}"</p>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

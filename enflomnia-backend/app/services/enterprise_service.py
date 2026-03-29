@@ -29,9 +29,10 @@ class EnterpriseService:
         if not e and enterprise_id == "00000000-0000-0000-0000-000000000000":
             e = Enterprise(
                 id=enterprise_id,
-                name="Default Workspace",
-                industry="Technology",
-                primary_product="Enflomnia AI Catalyst"
+                name="Aaliyakhan10 Workspace",
+                industry="Creative Studio",
+                primary_product="Social Catalyst",
+                owner_email="aaliyakhan4352@gmail.com"
             )
             self.db.add(e)
             self.db.commit()
@@ -39,6 +40,23 @@ class EnterpriseService:
             
         if not e:
             raise HTTPException(status_code=404, detail="Enterprise not found")
+        return e
+
+    def get_enterprise_by_email(self, email: str) -> Enterprise:
+        """Resolves the enterprise profile owned by this specific user email."""
+        e = self.db.query(Enterprise).filter(Enterprise.owner_email == email).first()
+        if not e:
+            # Auto-onboard the user to a new workspace if they don't have one
+            print(f"[ONBOARDING] Creating new workspace for {email}")
+            e = Enterprise(
+                id=str(uuid.uuid4()),
+                name=f"{email.split('@')[0]}'s Workspace",
+                industry="General",
+                owner_email=email
+            )
+            self.db.add(e)
+            self.db.commit()
+            self.db.refresh(e)
         return e
 
     def update_profile(self, enterprise_id: str, data: Dict[str, Any]) -> Enterprise:

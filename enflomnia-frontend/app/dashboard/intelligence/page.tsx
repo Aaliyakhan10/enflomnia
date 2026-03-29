@@ -33,16 +33,16 @@ export default function ContentIntelligencePage() {
     const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchData();
+        fetchData(false);
     }, []);
 
-    async function fetchData() {
+    async function fetchData(force = false) {
         setLoading(true);
         try {
             const [sugRes, trendRes, growthRes, insightRes] = await Promise.all([
-                intelligenceApi.getSuggestions(creatorId),
-                intelligenceApi.getCompetitorsAndTrends(creatorId),
-                intelligenceApi.simulateGrowth(creatorId),
+                intelligenceApi.getSuggestions(creatorId, force),
+                intelligenceApi.getCompetitorsAndTrends(creatorId, "lifestyle", force),
+                intelligenceApi.simulateGrowth(creatorId, force),
                 instagramApi.analyzeReels(creatorId)
             ]);
             setData({
@@ -59,7 +59,7 @@ export default function ContentIntelligencePage() {
     async function handleAnalyze() {
         setAnalyzing(true);
         try {
-            await fetchData();
+            await fetchData(true);
         } catch { }
         setAnalyzing(false);
     }

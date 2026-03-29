@@ -61,8 +61,12 @@ class ComplianceCheck(BaseModel):
 class PublishPayload(BaseModel):
     type: str
     day: str
+    video_url: Optional[str] = None
+    caption: Optional[str] = None
 
 class VideoCreateRequest(BaseModel):
     title: str
     input_props: dict
     script_id: Optional[str] = None
+    video_url: Optional[str] = None
+    status: Optional[str] = "completed"
