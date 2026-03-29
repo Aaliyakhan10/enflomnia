@@ -12,4 +12,5 @@ class CampaignStrategy(Base):
     proposed_scripts = Column(JSON, nullable=False)
     engagement_playbook = Column(JSON, nullable=False)
     reach_forecast = Column(String, nullable=False)
+    user_email = Column(String, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

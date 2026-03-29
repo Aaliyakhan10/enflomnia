@@ -158,7 +158,7 @@ class GeminiClient:
         start = time.time()
         try:
             result = self.client.models.generate_images(
-                model='imagen-3.0-generate-001',
+                model='imagen-4.0-generate-001',
                 prompt=prompt,
                 config=types.GenerateImagesConfig(
                     number_of_images=number_of_images,

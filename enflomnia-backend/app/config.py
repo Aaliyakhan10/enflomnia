@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     # Supabase
     supabase_url: str = ""
     supabase_key: str = ""
+    jwt_secret: str = ""
 
     # Langfuse (LLM Observability)
     langfuse_public_key: str = ""

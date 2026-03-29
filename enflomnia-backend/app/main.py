@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine, Base
-from app.routers import reach, comments, workload, pricing, scripts, matching, instagram, intelligence, content_schedule, orchestrator, webhooks
+from app.routers import reach, comments, workload, pricing, scripts, matching, instagram, intelligence, content_schedule, orchestrator, webhooks, user
 from app.routers import enterprise as enterprise_router
 from app.dependencies import get_current_user
 
@@ -26,7 +26,7 @@ app = FastAPI(
 # CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex="https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -57,6 +57,7 @@ app.include_router(intelligence.router, dependencies=[Depends(get_current_user)]
 app.include_router(content_schedule.router, dependencies=[Depends(get_current_user)])
 
 # Unified Orchestrator (Protected)
+app.include_router(user.router, dependencies=[Depends(get_current_user)])
 app.include_router(orchestrator.router, dependencies=[Depends(get_current_user)])
 
 # Enterprise Vault (Protected)

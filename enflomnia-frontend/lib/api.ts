@@ -239,6 +239,33 @@ export const enterpriseApi = {
 
     listCampaigns: (enterpriseId: string) =>
         api.get(`/api/enterprise/${enterpriseId}/campaigns`),
+
+    suggestObjectives: (enterpriseId: string) =>
+        api.get(`/api/enterprise/${enterpriseId}/suggest-objectives`),
+
+    magicScanPersona: (enterpriseId: string) =>
+        api.get(`/api/enterprise/${enterpriseId}/magic-scan-persona`),
+
+    // Profile Management
+    getProfile: (enterpriseId: string) =>
+        api.get(`/api/enterprise/${enterpriseId}`),
+
+    updateProfile: (enterpriseId: string, data: any) =>
+        api.patch(`/api/enterprise/${enterpriseId}/profile`, data),
+
+    // Video Studio
+    generateVideo: (enterpriseId: string, data: { title: string; input_props: any; script_id?: string }) =>
+        api.post(`/api/enterprise/${enterpriseId}/videos`, data),
+
+    listVideos: (enterpriseId: string) =>
+        api.get(`/api/enterprise/${enterpriseId}/videos`),
+};
+
+// ── User Profiling ────────────────────────────────────────────────────────
+export const userApi = {
+    getProfile: () => api.get("/api/user/profile"),
+    getHistory: (type: "image" | "video" | "campaign" | "script") => 
+        api.get("/api/user/history", { params: { type } }),
 };
 
 export default api;

@@ -31,6 +31,7 @@ class ScriptService:
         brand_name: Optional[str] = None,
         brand_brief: Optional[str] = None,
         tone: str = "entertaining",
+        user_email: str = None
     ) -> dict:
         """Generate a branded content script via Gemini. Caches for 1 hour."""
         existing = db.query(Script).filter(
@@ -52,10 +53,11 @@ class ScriptService:
         knowledge_context = knowledge_lake.get_context_for_agent(db, creator_id, topic)
 
         raw = self._call_gemini(topic, brand_name, brand_brief, tone, knowledge_context)
-
+        
         script = Script(
             id=str(uuid.uuid4()),
             creator_id=creator_id,
+            user_email=user_email,
             brand_name=brand_name,
             topic=topic,
             tone=tone,
@@ -73,14 +75,14 @@ class ScriptService:
         res["cached"] = False
         return res
 
-    def get_history(self, db: Session, creator_id: str, limit: int = 20) -> List[dict]:
-        scripts = (
-            db.query(Script)
-            .filter(Script.creator_id == creator_id)
-            .order_by(Script.created_at.desc())
-            .limit(limit)
-            .all()
-        )
+    def get_history(self, db: Session, creator_id: str = None, user_email: str = None, limit: int = 20) -> List[dict]:
+        query = db.query(Script)
+        if user_email:
+            query = query.filter(Script.user_email == user_email)
+        elif creator_id:
+            query = query.filter(Script.creator_id == creator_id)
+            
+        scripts = query.order_by(Script.created_at.desc()).limit(limit).all()
         return [self._format_output(s) for s in scripts]
 
     # ── Private helpers ─────────────────────────────────────────────────────

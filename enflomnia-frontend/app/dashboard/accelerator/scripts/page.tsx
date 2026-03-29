@@ -6,7 +6,7 @@ import {
     Video, Layout, List, History, ChevronDown, Play
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { scriptsApi, instagramApi } from "@/lib/api";
+import { scriptsApi, instagramApi, userApi } from "@/lib/api";
 import { useAccount } from "@/lib/account-context";
 import dynamic from "next/dynamic";
 
@@ -183,7 +183,7 @@ function ScriptsContent() {
     async function loadHistory() {
         setLoadingHistory(true);
         try {
-            const res = await scriptsApi.getHistory(creatorId);
+            const res = await userApi.getHistory("script");
             setHistory(res.data || []);
         } catch { }
         setLoadingHistory(false);

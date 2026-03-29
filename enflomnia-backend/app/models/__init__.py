@@ -19,3 +19,4 @@ from app.models.fact_record import FactRecord  # noqa: F401
 from app.models.campaign import CampaignStrategy  # noqa: F401
 from app.models.audit_log import AuditLog  # noqa: F401
 from app.models.video import Video  # noqa: F401
+from app.models.image import GeneratedImage  # noqa: F401

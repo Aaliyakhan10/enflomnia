@@ -25,12 +25,14 @@ class VideoService:
         title: str, 
         input_props: dict, 
         script_id: Optional[str] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        user_email: str = None
     ) -> Video:
         """Create a new video record and trigger the Remotion render."""
         video = Video(
             id=str(uuid.uuid4()),
             enterprise_id=enterprise_id,
+            user_email=user_email,
             title=title,
             script_id=script_id,
             input_props=input_props,
@@ -44,8 +46,14 @@ class VideoService:
         # For now, we'll try to call the frontend API directly or return the pending state
         return video
 
-    def list_videos(self, enterprise_id: str) -> List[Video]:
-        return self.db.query(Video).filter(Video.enterprise_id == enterprise_id).order_by(Video.created_at.desc()).all()
+    def list_videos(self, enterprise_id: str = None, user_email: str = None) -> List[Video]:
+        query = self.db.query(Video)
+        if user_email:
+            query = query.filter(Video.user_email == user_email)
+        elif enterprise_id:
+            query = query.filter(Video.enterprise_id == enterprise_id)
+            
+        return query.order_by(Video.created_at.desc()).all()
 
     def get_video(self, video_id: str) -> Optional[Video]:
         return self.db.query(Video).filter(Video.id == video_id).first()

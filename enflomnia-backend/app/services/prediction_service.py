@@ -24,9 +24,9 @@ class PredictionService:
 
     # ── 1. Content Suggestions ──────────────────────────────────────────────
 
-    def generate_content_suggestions(self, db: Session, creator_id: str) -> List[Dict[str, Any]]:
+    def generate_content_suggestions(self, db: Session, creator_id: str, context: str = "") -> List[Dict[str, Any]]:
         cached = db.query(AIInsight).filter(AIInsight.creator_id == creator_id, AIInsight.insight_type == "suggestions").first()
-        if cached:
+        if cached and not context:  # Only use cache if no fresh context is provided
             delta = datetime.now(timezone.utc) - cached.generated_at.replace(tzinfo=timezone.utc)
             if delta < timedelta(hours=24):
                 return cached.content
@@ -43,16 +43,20 @@ class PredictionService:
         reels.sort(key=lambda x: x.total_interactions or 0, reverse=True)
         top_reels = reels[:5]
 
-        context_str = "\n".join([f"- Captions: '{(r.caption or '')[:50]}...', Reach: {r.reach}, Interactions: {r.total_interactions}" for r in top_reels])
+        reels_context = "\n".join([f"- Captions: '{(r.caption or '')[:50]}...', Reach: {r.reach}, Interactions: {r.total_interactions}" for r in top_reels])
 
         prompt = f"""You are an elite Instagram growth strategist.
 The creator is in the '{niche}' niche with {follower_count} followers.
 Their average engagement rate is {engagement_rate:.1%}.
 
-Here are their recent top performing reels:
-{context_str}
+--- ENTERPRISE CONTEXT ---
+{context}
+
+--- RECENT TOP PERFORMANCE ---
+{reels_context}
 
 Suggest exactly 3 new specific content formats/topics to maximize engagement.
+Focus on promoting the enterprise context provided.
 For each, specify a "preferred_time_type": "peak", "morning", or "niche".
 
 Return ONLY valid JSON:
@@ -60,7 +64,7 @@ Return ONLY valid JSON:
   {{
     "title": "Short title",
     "format": "e.g., POV, Tutorial, VLOG",
-    "rationale": "Why this will work, citing specific metrics.",
+    "rationale": "Why this will work, citing specific metrics and enterprise context.",
     "hook_idea": "A 1-sentence opening hook (max 15 words).",
     "preferred_time_type": "peak" | "morning" | "niche"
   }}

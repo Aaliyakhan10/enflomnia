@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
-import { Video, Sparkles, Loader2, Link as LinkIcon, Download, Copy, Check } from "lucide-react";
-import { enterpriseApi } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { Video, Sparkles, Loader2, Link as LinkIcon, Download, Copy, Check, History } from "lucide-react";
+import { enterpriseApi, userApi } from "@/lib/api";
 
-const DEMO_ENTERPRISE_ID = "demo-enterprise-001";
+const ENTERPRISE_ID = "00000000-0000-0000-0000-000000000000";
 
 export default function VideoStudioPage() {
     const [videoLink, setVideoLink] = useState("");
@@ -13,12 +13,40 @@ export default function VideoStudioPage() {
     const [copied, setCopied] = useState(false);
     const [isRendering, setIsRendering] = useState(false);
     const [renderedVideoUrl, setRenderedVideoUrl] = useState<string | null>(null);
+    const [history, setHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(true);
+    const [campaigns, setCampaigns] = useState<any[]>([]);
+
+    useEffect(() => {
+        fetchHistory();
+        fetchCampaigns();
+    }, []);
+
+    const fetchCampaigns = async () => {
+        try {
+            const res = await enterpriseApi.listCampaigns(ENTERPRISE_ID);
+            setCampaigns(res.data || []);
+        } catch (e) {
+            console.error("Failed to fetch campaigns", e);
+        }
+    };
+
+    const fetchHistory = async () => {
+        try {
+            const res = await userApi.getHistory("video");
+            setHistory(res.data || []);
+        } catch (err) {
+            console.error("Failed to fetch history", err);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
 
     const handleGenerateCaption = async () => {
         if (!description) return;
         setIsGenerating(true);
         try {
-            const res = await enterpriseApi.generateCaption(DEMO_ENTERPRISE_ID, {
+            const res = await enterpriseApi.generateCaption(ENTERPRISE_ID, {
                 description: description,
                 content_type: "video"
             });
@@ -60,6 +88,17 @@ export default function VideoStudioPage() {
             const data = await response.json();
             if (data.url) {
                 setRenderedVideoUrl(data.url);
+                
+                // Save this video request to the DB
+                await enterpriseApi.generateVideo(ENTERPRISE_ID, {
+                    title: `Video for ${description.substring(0, 20)}...`,
+                    input_props: {
+                        script: description,
+                        images: videoLink ? [videoLink] : [],
+                        caption: generatedCaption
+                    }
+                });
+                fetchHistory();
             } else {
                 throw new Error(data.error || "Render failed");
             }
@@ -72,7 +111,7 @@ export default function VideoStudioPage() {
     };
 
     return (
-        <div className="p-8 max-w-5xl mx-auto space-y-8">
+        <div className="p-8 max-w-5xl mx-auto space-y-8 pb-24">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 mb-1.5">
                     <Video size={24} className="text-violet-500" />
@@ -86,6 +125,21 @@ export default function VideoStudioPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-1 space-y-4">
                     <div className="card shadow-sm ring-1 ring-gray-100 p-6 space-y-4">
+                        {campaigns.length > 0 && (
+                            <div>
+                                <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5 flex items-center gap-1.5"><Sparkles size={12} className="text-violet-500" /> Use Campaign Script</label>
+                                <select 
+                                    className="w-full text-sm p-3 rounded-xl border border-gray-200 bg-violet-50/30 focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all outline-none text-gray-700"
+                                    onChange={(e) => setDescription(e.target.value)}
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>-- Select campaign video script --</option>
+                                    {campaigns.flatMap(c => c.proposed_scripts || []).filter(s => s && s.video_prompt).map((s, i) => (
+                                        <option key={i} value={s.video_prompt}>{s.day}: {s.topic ? s.topic.substring(0, 40) + '...' : 'Script'}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Video Asset Link (Optional)</label>
                             <div className="relative">
@@ -195,6 +249,59 @@ export default function VideoStudioPage() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* History Section */}
+            <div className="space-y-6 pt-12 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                            <History size={20} className="text-violet-500" />
+                            Rendered Asset History
+                        </h2>
+                        <p className="text-xs text-gray-500">Track and manage your AI-composed video assets.</p>
+                    </div>
+                </div>
+
+                {loadingHistory ? (
+                    <div className="flex items-center justify-center p-12">
+                        <Loader2 className="animate-spin text-gray-300" size={32} />
+                    </div>
+                ) : history.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {history.map((vid, idx) => (
+                            <div key={vid.id || idx} className="bg-white rounded-2xl ring-1 ring-gray-100 shadow-sm overflow-hidden flex flex-col hover:shadow-md transition-shadow">
+                                <div className="aspect-video bg-gray-900 flex items-center justify-center relative">
+                                    <Video size={32} className="text-gray-700" />
+                                    {vid.video_url && (
+                                        <div className="absolute inset-0 bg-emerald-500/10 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                             <a href={vid.video_url} target="_blank" className="btn btn-brand py-2 px-4 text-xs">Watch MP4</a>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-4 flex-1 flex flex-col gap-2">
+                                    <div className="flex justify-between items-start">
+                                        <h4 className="text-sm font-bold text-gray-900 line-clamp-1">{vid.title}</h4>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter ${vid.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500'}`}>
+                                            {vid.status}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed italic">"{vid.input_props?.caption}"</p>
+                                    <div className="pt-2 flex justify-end">
+                                        <button className="text-[10px] font-bold text-gray-400 hover:text-gray-900 uppercase tracking-widest transition-colors flex items-center gap-1">
+                                            Reuse Props <Sparkles size={10} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center p-12 bg-gray-50/50 rounded-[2rem] border border-dashed border-gray-200">
+                        <Video size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-sm text-gray-500">No assets rendered yet.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

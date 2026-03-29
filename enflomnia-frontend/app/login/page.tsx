@@ -40,7 +40,8 @@ export default function LoginPage() {
       });
       if (error) throw error;
     } catch (error: any) {
-      alert(error.message);
+      console.error("Google Login Error:", error);
+      alert(`Google Login Failed: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }

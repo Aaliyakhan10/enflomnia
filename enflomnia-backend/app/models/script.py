@@ -18,4 +18,5 @@ class Script(Base):
     cta = Column(Text, nullable=True)             # call-to-action
     tips = Column(Text, nullable=True)            # JSON: [tip strings]
     reasoning = Column(Text, nullable=True)       # Claude's notes on approach
+    user_email = Column(String, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

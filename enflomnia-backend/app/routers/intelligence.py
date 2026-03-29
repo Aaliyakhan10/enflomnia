@@ -12,11 +12,21 @@ _svc = PredictionService()
 @router.get("/content-suggestions/{creator_id}", summary="Get AI-driven content formatting suggestions")
 def get_content_suggestions(creator_id: str, db: Session = Depends(get_db)):
     """
-    Analyzes the creator's top performing Reels and uses Claude 3.5 
-    to suggest 3 new specific formats/topics to maximize engagement.
+    Analyzes the creator's top performing Reels and uses Gemini 
+    to suggest 3 new specific formats/topics to maximize engagement, 
+    grounded in Enterprise Knowledge Lake documents.
     """
+    from app.services.enterprise_service import EnterpriseService
+    from app.services.knowledge_lake import KnowledgeLakeService
     try:
-        return _svc.generate_content_suggestions(db, creator_id)
+        ent_svc = EnterpriseService(db)
+        enterprise_id = "00000000-0000-0000-0000-000000000000"
+        ent_svc.get_or_create_enterprise(enterprise_id)
+        
+        knowledge_svc = KnowledgeLakeService()
+        context = knowledge_svc.get_context_for_agent(db, enterprise_id, "brand guidelines products strategy")
+        
+        return _svc.generate_content_suggestions(db, creator_id, context=context)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

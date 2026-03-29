@@ -5,7 +5,7 @@ import {
     Home, BarChart2, MessageCircle, BatteryCharging, Film,
     Image, Video, ScrollText,
     Brain, CalendarDays, Sparkles, Instagram,
-    Database, Plug, BookOpen, Table2, Rocket
+    Database, Plug, BookOpen, Table2, Rocket, Settings
 } from "lucide-react";
 import { AccountProvider, useAccount } from "@/lib/account-context";
 
@@ -15,12 +15,12 @@ const coreNav = [
     { href: "/dashboard/shield", label: "Brand Safety", icon: MessageCircle },
     { href: "/dashboard/workload", label: "Workload Pulse", icon: BatteryCharging },
     { href: "/dashboard/instagram", label: "Asset Gallery", icon: Film },
+    { href: "/dashboard/settings", label: "Platform Settings", icon: Settings },
 ];
 
 const creativeNav = [
     { href: "/dashboard/creative/image", label: "Image Studio", icon: Image },
     { href: "/dashboard/creative/video", label: "Video Studio", icon: Video },
-    { href: "/dashboard/vault/knowledge", label: "Document Studio", icon: ScrollText },
 ];
 
 const aiNav = [
@@ -31,8 +31,6 @@ const aiNav = [
 
 const vaultNav = [
     { href: "/dashboard/vault", label: "Vault Overview", icon: Database },
-    { href: "/dashboard/vault/connectors", label: "Connectors", icon: Plug },
-    { href: "/dashboard/vault/knowledge", label: "Knowledge Lake", icon: BookOpen },
     { href: "/dashboard/vault/facts", label: "Fact Database", icon: Table2 },
 ];
 

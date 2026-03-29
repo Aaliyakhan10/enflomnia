@@ -18,6 +18,7 @@ from app.services.reach_anomaly import ReachAnomalyService
 from app.services.scheduler_service import SchedulerService
 from app.services.knowledge_lake import KnowledgeLakeService
 from app.services.fact_database import FactDatabaseService
+from app.services.publishing_service import PublishingService
 
 
 class Orchestrator:
@@ -44,6 +45,9 @@ class Orchestrator:
         topic: Optional[str] = None,
         tone: str = "entertaining",
         enterprise_id: Optional[str] = None,
+        user_email: Optional[str] = None,
+        seed_info: Optional[dict] = None,  # {"title": "...", "content": "..."}
+        publish_automatically: bool = False,
     ) -> dict:
         """
         Execute the full Content Nervous System loop:
@@ -63,6 +67,23 @@ class Orchestrator:
         results = {}
         loop_start = time.time()
         enterprise_context = ""
+
+        # ── Phase -1: Seed (Taking Company Information) ────────────────────
+        if seed_info and enterprise_id:
+            span_seed = trace.span(name="seed_soil", metadata={"agent": "knowledge_lake"})
+            try:
+                title = seed_info.get("title", "New Company Context")
+                content = seed_info.get("content", "")
+                if content:
+                    ingested = self.knowledge_lake.ingest_text(db, enterprise_id, title, content)
+                    results["seed_soil"] = {"status": "ok", "doc_id": ingested.get("id")}
+                    # If no topic provided, use seeded title to ground the loop
+                    if not topic:
+                        topic = title
+                span_seed.end(output=results.get("seed_soil", {}))
+            except Exception as e:
+                results["seed_soil"] = {"status": "error", "error": str(e)}
+                span_seed.end(output={"error": str(e)})
 
         # ── Phase 0: Knowledge Grounding (Enterprise Data) ─────────────────
         if enterprise_id:
@@ -88,7 +109,7 @@ class Orchestrator:
         # ── Phase 1: DNA & Soil (Knowledge Extraction) ─────────────────────
         span_dna = trace.span(name="dna_soil", metadata={"agent": "dna_soil"})
         try:
-            suggestions = self.dna_soil.generate_content_suggestions(db, creator_id)
+            suggestions = self.dna_soil.generate_content_suggestions(db, creator_id, context=enterprise_context)
             results["dna_soil"] = {
                 "status": "ok",
                 "suggestions": suggestions[:3] if suggestions else [],
@@ -108,7 +129,7 @@ class Orchestrator:
         span_alchemist = trace.span(name="alchemist", metadata={"agent": "alchemist"})
         try:
             script = self.alchemist.generate_script(
-                db=db, creator_id=creator_id, topic=topic, tone=tone,
+                db=db, creator_id=creator_id, topic=topic, tone=tone, user_email=user_email
             )
             results["alchemist"] = {
                 "status": "ok",
@@ -172,6 +193,36 @@ class Orchestrator:
         except Exception as e:
             results["system_pulse"] = {"status": "error", "error": str(e)}
             span_system.end(output={"error": str(e)})
+
+        # ── Phase 6: The Fruit (Automated Publishing) ──────────────────────
+        if publish_automatically and enterprise_id:
+            span_fruit = trace.span(name="fruit_launch", metadata={"agent": "postman"})
+            try:
+                # ONLY publish if Aegis passed with high confidence
+                aegis_data = results.get("aegis", {})
+                aegis_status = aegis_data.get("status")
+                is_safe = aegis_data.get("compliance") in ["safe", "high-value"]
+                is_confident = aegis_data.get("confidence", 0) >= 0.8
+                
+                if aegis_status == "ok" and is_safe and is_confident:
+                    pub_svc = PublishingService(db)
+                    payload = {
+                        "type": "automated_post",
+                        "day": "Master Flow Loop",
+                        "script_hook": results.get("alchemist", {}).get("hook", ""),
+                        "topic": topic
+                    }
+                    pub_result = pub_svc.publish_content(enterprise_id, payload)
+                    results["fruit"] = pub_result
+                else:
+                    results["fruit"] = {
+                        "status": "skipped", 
+                        "reason": f"Safety audit failed or low confidence. Status: {aegis_status}, Safe: {is_safe}, Conf: {aegis_data.get('confidence')}"
+                    }
+                span_fruit.end(output=results["fruit"])
+            except Exception as e:
+                results["fruit"] = {"status": "error", "error": str(e)}
+                span_fruit.end(output={"error": str(e)})
 
         # ── Finalize ───────────────────────────────────────────────────────
         total_ms = round((time.time() - loop_start) * 1000, 1)

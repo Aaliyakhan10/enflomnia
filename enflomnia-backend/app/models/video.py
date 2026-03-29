@@ -19,6 +19,7 @@ class Video(Base):
     status = Column(String, default="pending")  # pending, rendering, completed, failed
     video_url = Column(String, nullable=True)   # Public URL to the MP4
     error_message = Column(Text, nullable=True)
+    user_email = Column(String, index=True, nullable=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
