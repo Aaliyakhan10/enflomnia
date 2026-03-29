@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "@/lib/account-context";
+import { useUser } from "@/lib/user-context";
 import { enterpriseApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -9,9 +10,9 @@ import { Settings, LogOut, UploadCloud, Building, Share2, AlertCircle, CheckCirc
 
 export default function SettingsPage() {
     const { account, isConnected, isLoading: accountLoading } = useAccount();
+    const { user: enterprise, refresh: fetchProfile } = useUser();
     const router = useRouter();
 
-    const [enterprise, setEnterprise] = useState<any>(null);
     const [companyInfo, setCompanyInfo] = useState({ name: "", industry: "", tone: "" });
     const [isSavingCompInfo, setIsSavingCompInfo] = useState(false);
     const [compSaveMsg, setCompSaveMsg] = useState("");
@@ -24,24 +25,14 @@ export default function SettingsPage() {
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        try {
-            const res = await enterpriseApi.getMyProfile();
-            if (res.data) {
-                setEnterprise(res.data);
-                setCompanyInfo({
-                    name: res.data.name || "",
-                    industry: res.data.industry || "",
-                    tone: res.data.brand_voice || "" // backend uses brand_voice
-                });
-            }
-        } catch (err) {
-            console.error("Could not fetch enterprise profile", err);
+        if (enterprise) {
+            setCompanyInfo({
+                name: enterprise.name || "",
+                industry: enterprise.industry || "",
+                tone: enterprise.brand_voice || "" 
+            });
         }
-    };
+    }, [enterprise]);
 
     const handleLogout = async () => {
         await supabase.auth.signOut();

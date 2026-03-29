@@ -63,6 +63,7 @@ class PublishPayload(BaseModel):
     day: str
     video_url: Optional[str] = None
     caption: Optional[str] = None
+    campaign_id: Optional[str] = None
 
 class VideoCreateRequest(BaseModel):
     title: str

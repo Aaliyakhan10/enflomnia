@@ -13,6 +13,8 @@ from app.integrations.gemini_client import GeminiClient
 from app.models.reel import Reel
 from app.models.instagram_account import InstagramAccount
 from app.models.ai_insight import AIInsight
+from app.models.knowledge_document import KnowledgeDocument
+from app.models.enterprise import Enterprise
 
 AGENT_NAME = "dna_soil"
 
@@ -192,3 +194,59 @@ Return ONLY valid JSON:
         db.commit()
 
         return parsed
+
+    # ── 5. Grounded Script Factory ──────────────────────────────────────────
+
+    def generate_grounded_script(self, db: Session, creator_id: str, topic: str = None) -> Dict[str, Any]:
+        """Generates content ideas and a full script EXCLUSIVELY based on Knowledge Lake data."""
+        
+        # 1. Resolve enterprise and its knowledge base
+        account = db.query(InstagramAccount).filter(InstagramAccount.creator_id == creator_id).first()
+        if not account:
+            return {"error": "Account not found"}
+            
+        enterprise = db.query(Enterprise).filter(Enterprise.id == account.enterprise_id).first()
+        if not enterprise:
+            return {"error": "Enterprise context missing"}
+
+        docs = db.query(KnowledgeDocument).filter(KnowledgeDocument.enterprise_id == enterprise.id).all()
+        
+        if not docs:
+            return {
+                "error": "Knowledge Lake is empty. Please upload some brand documents or FAQs first.",
+                "ideas": [],
+                "script": None
+            }
+
+        knowledge_context = "\n\n".join([f"DOC: {d.title}\nCONTENT: {d.content[:2000]}" for d in docs])
+
+        prompt = f"""You are a brand-grounded content strategist. 
+YOU MUST ONLY USE THE PROVIDED ENTERPRISE KNOWLEDGE BELOW TO GENERATE IDEAS AND SCRIPTS.
+IF THE KNOWLEDGE IS INSUFFICIENT, BE HONEST BUT TRY TO SYNTHESIZE FROM WHAT IS THERE.
+
+--- ENTERPRISE KNOWLEDGE LAKE ---
+{knowledge_context}
+
+--- TASK ---
+{f"Target Topic: {topic}" if topic else "Suggest 3 deep-dive content ideas and generate 1 full ready-to-shoot script."}
+
+Return ONLY valid JSON:
+{{
+  "ideas": [
+    {{"title": "Idea 1", "hook": "The opening line", "rationale": "Why this aligns with the docs"}},
+    {{"title": "Idea 2", "hook": "The opening line", "rationale": "Why this aligns with the docs"}},
+    {{"title": "Idea 3", "hook": "The opening line", "rationale": "Why this aligns with the docs"}}
+  ],
+  "script": {{
+    "title": "Script Title",
+    "hook": "Strong attention-grabbing hook",
+    "body": [
+       {{"section": "Point 1", "content": "Detailed point based on docs"}},
+       {{"section": "Point 2", "content": "Detailed point based on docs"}},
+       {{"section": "Point 3", "content": "Detailed point based on docs"}}
+    ],
+    "cta": "Call to action grounded in brand goals"
+  }}
+}}"""
+        result = self.gemini.invoke_model_json(prompt, agent_name=AGENT_NAME)
+        return result

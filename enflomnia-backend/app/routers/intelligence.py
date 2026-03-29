@@ -83,3 +83,19 @@ def simulate_projected_growth(creator_id: str, force: bool = False, db: Session 
         return _svc.simulate_growth(db, creator_id, force_refresh=force)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/grounded-script/{creator_id}", summary="Generate script/ideas grounded in Knowledge Lake")
+def generate_grounded_content(
+    creator_id: str, 
+    topic: Optional[str] = None, 
+    db: Session = Depends(get_db)
+):
+    """
+    Generates content ideas and a full ready-to-shoot script 
+    exclusively using the Enterprise Knowledge Lake documents.
+    """
+    try:
+        return _svc.generate_grounded_script(db, creator_id, topic=topic)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

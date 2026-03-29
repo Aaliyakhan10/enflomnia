@@ -1,6 +1,7 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { instagramApi } from "./api";
+import { useUser } from "./user-context";
 
 // The fixed demo creator ID — used as the key when connecting via the Instagram page.
 // All backend data (reach, comments, workload, scripts, etc.) is keyed to this ID.
@@ -23,15 +24,17 @@ const AccountContext = createContext<AccountContextType>({
 });
 
 export function AccountProvider({ children }: { children: React.ReactNode }) {
+    const { user, isLoading: userLoading } = useUser();
     const [account, setAccount] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     async function fetchAccount() {
+        if (!user) return;
+        setIsLoading(true);
         try {
             const res = await instagramApi.getAccount(DEFAULT_CREATOR_ID);
             setAccount(res.data);
         } catch {
-            // 404 = not connected yet
             setAccount(null);
         } finally {
             setIsLoading(false);
@@ -39,8 +42,12 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     }
 
     useEffect(() => {
-        fetchAccount();
-    }, []);
+        if (!userLoading && user) {
+            fetchAccount();
+        } else if (!userLoading && !user) {
+            setIsLoading(false);
+        }
+    }, [user, userLoading]);
 
     return (
         <AccountContext.Provider value={{

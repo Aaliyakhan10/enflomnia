@@ -4,7 +4,8 @@ import {
     BrainCircuit, Sparkles, TrendingUp, Target,
     MessageSquare, Zap, Loader2, RefreshCw,
     PieChart, Clock, CheckCircle2, Star,
-    Layout, Filter, BarChart3, ArrowUpRight
+    Layout, Filter, BarChart3, ArrowUpRight,
+    FileText, Scroll, BookOpen, PenTool
 } from "lucide-react";
 import { intelligenceApi, instagramApi } from "@/lib/api";
 import { useAccount } from "@/lib/account-context";
@@ -31,6 +32,11 @@ export default function ContentIntelligencePage() {
     const [loading, setLoading] = useState(true);
     const [analyzing, setAnalyzing] = useState(false);
     const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(null);
+
+    // Grounded Script State
+    const [isGeneratingScript, setIsGeneratingScript] = useState(false);
+    const [groundedResult, setGroundedResult] = useState<any>(null);
+    const [selectedIdeaIndex, setSelectedIdeaIndex] = useState<number | null>(null);
 
     useEffect(() => {
         fetchData(false);
@@ -62,6 +68,19 @@ export default function ContentIntelligencePage() {
             await fetchData(true);
         } catch { }
         setAnalyzing(false);
+    }
+
+    async function handleGenerateGrounded() {
+        setIsGeneratingScript(true);
+        try {
+            const res = await intelligenceApi.generateGroundedScript(creatorId);
+            setGroundedResult(res.data);
+            setSelectedIdeaIndex(null);
+        } catch (err) {
+            console.error("Failed to generate grounded script", err);
+        } finally {
+            setIsGeneratingScript(false);
+        }
     }
 
     if (loading && !data) {
@@ -98,6 +117,107 @@ export default function ContentIntelligencePage() {
                         {analyzing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                         {analyzing ? "Grounding Facts..." : "Sync Brand Knowledge"}
                     </button>
+                </div>
+            </div>
+
+            {/* ── Grounded Script Factory (USER REQUESTED) ────────────────────────── */}
+            <div className="card border-violet-100 bg-violet-50/20 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.05] transition-opacity">
+                    <Scroll size={120} className="text-violet-900" />
+                </div>
+                
+                <div className="flex flex-col md:flex-row gap-8 items-start relative z-10">
+                    <div className="md:w-1/3 space-y-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 text-[10px] font-black text-violet-600 uppercase tracking-widest">
+                            <PenTool size={10} /> Brand Alchemist
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-900 leading-tight">Grounded Script Factory</h2>
+                        <p className="text-xs text-gray-500 font-medium leading-relaxed">
+                            Synthesize deep-dive content ideas and ready-to-shoot scripts derived <span className="text-violet-600 font-bold">exclusively</span> from your Knowledge Lake documents. No trends, just your truth.
+                        </p>
+                        <button 
+                            onClick={handleGenerateGrounded}
+                            disabled={isGeneratingScript}
+                            className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white font-bold py-3 rounded-2xl hover:bg-violet-600 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                        >
+                            {isGeneratingScript ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} className="text-violet-400" />}
+                            {isGeneratingScript ? "Synthesizing Knowledge..." : "Generate from Brand docs"}
+                        </button>
+                    </div>
+
+                    <div className="flex-1 w-full min-h-[160px] flex flex-col justify-center">
+                        {!groundedResult && !isGeneratingScript && (
+                            <div className="text-center py-8 border-2 border-dashed border-violet-100 rounded-3xl bg-white/50">
+                                <FileText size={32} className="mx-auto text-violet-200 mb-2" />
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Awaiting Brand Grounding</p>
+                            </div>
+                        )}
+
+                        {groundedResult && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="space-y-3">
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Grounded Ideas</h3>
+                                    <div className="space-y-2">
+                                        {groundedResult.ideas?.map((idea: any, idx: number) => (
+                                            <button 
+                                                key={idx}
+                                                onClick={() => setSelectedIdeaIndex(idx)}
+                                                className={`w-full text-left p-3 rounded-xl border transition-all ${selectedIdeaIndex === idx ? 'bg-violet-600 border-violet-600 text-white shadow-md' : 'bg-white border-violet-100 text-gray-700 hover:border-violet-300'}`}
+                                            >
+                                                <p className="text-xs font-bold truncate">{idea.title}</p>
+                                                <p className={`text-[10px] line-clamp-1 mt-0.5 ${selectedIdeaIndex === idx ? 'text-violet-100' : 'text-gray-400'}`}>{idea.hook}</p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white rounded-3xl p-5 shadow-sm border border-violet-100">
+                                    {(selectedIdeaIndex !== null && groundedResult.ideas) ? (
+                                        <div className="space-y-3 animate-in fade-in duration-300">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-violet-500 uppercase tracking-widest">Selected Idea</span>
+                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            </div>
+                                            <h4 className="text-sm font-bold text-gray-900 leading-snug">{groundedResult.ideas[selectedIdeaIndex].title}</h4>
+                                            <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 italic text-[11px] text-violet-700">
+                                                &ldquo;{groundedResult.ideas[selectedIdeaIndex].hook}&rdquo;
+                                            </div>
+                                            <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
+                                                <span className="font-bold text-gray-700">Rationale:</span> {groundedResult.ideas[selectedIdeaIndex].rationale}
+                                            </p>
+                                        </div>
+                                    ) : groundedResult.script ? (
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-violet-500 uppercase tracking-widest">Active Brand Script</span>
+                                                <CheckCircle2 size={12} className="text-emerald-500" />
+                                            </div>
+                                            <h4 className="text-base font-bold text-gray-900 leading-tight">{groundedResult.script.title}</h4>
+                                            <div className="max-h-[140px] overflow-y-auto pr-2 space-y-3 scrollbar-hide">
+                                                <div className="space-y-1">
+                                                    <p className="text-[9px] font-bold text-gray-400 uppercase">Attention Hook</p>
+                                                    <p className="text-xs text-gray-700 font-bold italic">&ldquo;{groundedResult.script.hook}&rdquo;</p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    {groundedResult.script.body?.slice(0, 2).map((b: any, i: number) => (
+                                                        <div key={i} className="space-y-0.5">
+                                                            <p className="text-[9px] font-bold text-violet-400 uppercase">Section: {b.section}</p>
+                                                            <p className="text-[10px] text-gray-600 line-clamp-2">{b.content}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-center py-4">
+                                            <BookOpen size={24} className="text-violet-100 mb-2" />
+                                            <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Select an idea to expand</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 

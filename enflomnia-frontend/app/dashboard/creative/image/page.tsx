@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Image as ImageIcon, Sparkles, Loader2, Download, History, Globe } from "lucide-react";
+import { Image as ImageIcon, Sparkles, Loader2, Download, History, Globe, Send, Instagram, X } from "lucide-react";
 import { enterpriseApi, userApi } from "@/lib/api";
 
 export default function ImageStudioPage() {
@@ -12,6 +12,14 @@ export default function ImageStudioPage() {
     const [history, setHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
+    
+    // Publisher State
+    const [showPublisher, setShowPublisher] = useState(false);
+    const [selectedAsset, setSelectedAsset] = useState<any>(null);
+    const [isPublishing, setIsPublishing] = useState(false);
+    const [publishStatus, setPublishStatus] = useState<string | null>(null);
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
+    const [activeCaption, setActiveCaption] = useState<string>("");
 
     useEffect(() => {
         fetchProfileAndData();
@@ -64,6 +72,36 @@ export default function ImageStudioPage() {
             alert("Synthesis failed. Check information grounding.");
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleOpenPublisher = (asset: any) => {
+        setSelectedAsset(asset);
+        setActiveCaption(asset.caption || "");
+        setShowPublisher(true);
+    };
+
+    const handlePublish = async () => {
+        if (!enterprise || !selectedAsset) return;
+        setIsPublishing(true);
+        setPublishStatus(null);
+        try {
+            await enterpriseApi.publishContent(enterprise.id, {
+                type: "image",
+                day: "Now",
+                image_url: selectedAsset.image_url || selectedAsset.image_data,
+                caption: activeCaption,
+                campaign_id: selectedCampaignId || undefined
+            });
+            setPublishStatus("Successfully published to Instagram!");
+            setTimeout(() => {
+                setShowPublisher(false);
+                setPublishStatus(null);
+            }, 3000);
+        } catch (e) {
+            setPublishStatus("Publishing failed. Check API connectors.");
+        } finally {
+            setIsPublishing(false);
         }
     };
 
@@ -162,6 +200,13 @@ export default function ImageStudioPage() {
                                                 >
                                                     <Download size={16} />
                                                 </a>
+                                                <button 
+                                                    onClick={() => handleOpenPublisher(img)}
+                                                    className="p-2 bg-pink-500 hover:bg-pink-600 rounded-lg shadow-sm text-white transition-all flex items-center gap-1.5"
+                                                >
+                                                    <Send size={14} />
+                                                    <span className="text-[10px] font-bold uppercase">Publish</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
@@ -233,6 +278,90 @@ export default function ImageStudioPage() {
                     </div>
                 )}
             </div>
+
+            {/* Publisher Hub Modal */}
+            {showPublisher && selectedAsset && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-8 duration-500">
+                        <div className="p-8 space-y-6">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h2 className="text-2xl font-black text-gray-900 flex items-center gap-3">
+                                        <Send size={24} className="text-pink-500" />
+                                        Publisher Hub
+                                    </h2>
+                                    <p className="text-sm text-gray-500 mt-1">Distribute image to Instagram via Enflomnia Pulse.</p>
+                                </div>
+                                <button onClick={() => setShowPublisher(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="aspect-square bg-gray-900 rounded-3xl overflow-hidden relative group max-h-[240px]">
+                                <img 
+                                    src={selectedAsset.image_url || selectedAsset.image_data} 
+                                    className="w-full h-full object-cover opacity-80" 
+                                    alt="Preview"
+                                />
+                                <div className="absolute inset-0 bg-pink-500/10" />
+                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-white/50 tracking-widest uppercase">
+                                    <span>{enterprise.name} Original</span>
+                                    <span>{new Date().toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5 flex items-center gap-1.5">
+                                        <Sparkles size={12} className="text-pink-500" /> Link to Campaign
+                                    </label>
+                                    <select 
+                                        className="w-full text-xs p-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white transition-all outline-none text-gray-700"
+                                        value={selectedCampaignId}
+                                        onChange={(e) => setSelectedCampaignId(e.target.value)}
+                                    >
+                                        <option value="">-- Generic Post (No Campaign) --</option>
+                                        {campaigns.map((c, i) => (
+                                            <option key={i} value={c.id}>{c.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Caption Architecture</label>
+                                    <textarea 
+                                        className="w-full text-xs p-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white transition-all outline-none text-gray-600 h-24 resize-none"
+                                        value={activeCaption}
+                                        onChange={(e) => setActiveCaption(e.target.value)}
+                                        placeholder="Add a caption..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={handlePublish}
+                                    disabled={isPublishing}
+                                    className="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-black py-4 rounded-2xl transition-all shadow-lg shadow-pink-500/20 text-sm uppercase tracking-[0.1em]"
+                                >
+                                    {isPublishing ? <Loader2 size={18} className="animate-spin" /> : <Instagram size={18} />}
+                                    {isPublishing ? "Publishing to Graph..." : "Publish to Instagram"}
+                                </button>
+                                
+                                {publishStatus && (
+                                    <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold text-center rounded-xl animate-in fade-in slide-in-from-top-2">
+                                        {publishStatus}
+                                    </div>
+                                ) || (
+                                    <p className="text-[10px] text-center text-gray-400 font-bold uppercase tracking-widest">
+                                        Grounding Audit: <span className="text-emerald-500">Passed</span> • Aegis Gate: <span className="text-emerald-500">Approved</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

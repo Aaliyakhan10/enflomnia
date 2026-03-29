@@ -12,5 +12,6 @@ class CampaignStrategy(Base):
     proposed_scripts = Column(JSON, nullable=False)
     engagement_playbook = Column(JSON, nullable=False)
     reach_forecast = Column(String, nullable=False)
+    published_assets = Column(JSON, nullable=True, default=[])  # Tracked Instagram posts
     user_email = Column(String, index=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

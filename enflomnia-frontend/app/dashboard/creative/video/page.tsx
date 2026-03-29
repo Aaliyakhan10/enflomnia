@@ -19,6 +19,7 @@ export default function VideoStudioPage() {
     const [showPublisher, setShowPublisher] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishStatus, setPublishStatus] = useState<string | null>(null);
+    const [selectedCampaignId, setSelectedCampaignId] = useState<string>("");
 
     useEffect(() => {
         fetchProfileAndData();
@@ -144,7 +145,8 @@ export default function VideoStudioPage() {
                 type: "video",
                 day: "Now",
                 video_url: renderedVideoUrl,
-                caption: generatedCaption
+                caption: generatedCaption,
+                campaign_id: selectedCampaignId || undefined
             });
             setPublishStatus("Successfully published to Instagram!");
             setTimeout(() => {
@@ -308,6 +310,33 @@ export default function VideoStudioPage() {
                                 <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-white/50 tracking-widest uppercase">
                                     <span>{enterprise.name} Original</span>
                                     <span>{new Date().toLocaleDateString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5 flex items-center gap-1.5">
+                                        <Sparkles size={12} className="text-emerald-500" /> Link to Campaign
+                                    </label>
+                                    <select 
+                                        className="w-full text-xs p-3 rounded-xl border border-gray-100 bg-gray-50/50 focus:bg-white transition-all outline-none text-gray-700"
+                                        value={selectedCampaignId}
+                                        onChange={(e) => setSelectedCampaignId(e.target.value)}
+                                    >
+                                        <option value="">-- Generic Post (No Campaign) --</option>
+                                        {campaigns.map((c, i) => (
+                                            <option key={i} value={c.id}>{c.title}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] uppercase font-black text-gray-400 mb-1.5">Final Caption</label>
+                                    <textarea 
+                                        className="w-full text-xs p-3 rounded-xl border border-gray-100 bg-gray-50 focus:bg-white transition-all outline-none text-gray-600 h-24 resize-none"
+                                        value={generatedCaption || ""}
+                                        onChange={(e) => setGeneratedCaption(e.target.value)}
+                                    />
                                 </div>
                             </div>
 

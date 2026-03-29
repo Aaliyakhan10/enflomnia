@@ -8,6 +8,7 @@ import {
     Database, Plug, BookOpen, Table2, Rocket, Settings
 } from "lucide-react";
 import { AccountProvider, useAccount } from "@/lib/account-context";
+import { UserProvider } from "@/lib/user-context";
 
 const coreNav = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -141,11 +142,13 @@ function DashboardSidebar() {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
-        <AccountProvider>
-            <div className="flex h-screen overflow-hidden bg-gray-50">
-                <DashboardSidebar />
-                <main className="flex-1 overflow-auto min-w-0">{children}</main>
-            </div>
-        </AccountProvider>
+        <UserProvider>
+            <AccountProvider>
+                <div className="flex h-screen overflow-hidden bg-gray-50">
+                    <DashboardSidebar />
+                    <main className="flex-1 overflow-auto min-w-0">{children}</main>
+                </div>
+            </AccountProvider>
+        </UserProvider>
     );
 }

@@ -42,6 +42,9 @@ export const intelligenceApi = {
     getSuggestions: (creatorId: string, force = false) =>
         api.get(`/api/v1/intelligence/content-suggestions/${creatorId}${force ? '?force=true' : ''}`),
 
+    generateGroundedScript: (creatorId: string, topic?: string) =>
+        api.post(`/api/v1/intelligence/grounded-script/${creatorId}`, { topic }),
+
     getFeedback: (creatorId: string, reelId: string) =>
         api.get(`/api/v1/intelligence/reel-feedback/${creatorId}/${reelId}`),
 
@@ -230,8 +233,15 @@ export const enterpriseApi = {
         api.post(`/api/enterprise/${enterpriseId}/compliance/audit`, data),
 
     // Fruit: Publish to Social
-    publishContent: (enterpriseId: string, data: { type: string; day: string; video_url?: string; caption?: string | null }) =>
-        api.post(`/api/enterprise/${enterpriseId}/publish`, data),
+    publishContent: (enterprise_id: string, data: { 
+        type: string; 
+        day: string; 
+        video_url?: string; 
+        image_url?: string;
+        caption?: string | null;
+        campaign_id?: string;
+    }) =>
+        api.post(`/api/enterprise/${enterprise_id}/publish`, data),
 
     // Campaigns (Strategist)
     generateCampaign: (enterpriseId: string, data: { goal: string }) =>
