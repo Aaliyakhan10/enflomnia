@@ -264,22 +264,37 @@ export default function VideoStudioPage() {
                         )}
                         
                         {renderedVideoUrl && (
-                            <div className="mt-6 p-6 bg-indigo-900 rounded-2xl text-white flex items-center justify-between animate-in zoom-in-95 duration-500">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                                        <div className="w-3 h-3 bg-emerald-400 rounded-full animate-pulse" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-sm">Asset Synthesis Complete</h4>
-                                        <p className="text-xs text-indigo-300">Your grounded video is ready for distribution.</p>
+                            <div className="mt-8 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10 relative group">
+                                    <video 
+                                        src={renderedVideoUrl} 
+                                        controls 
+                                        className="w-full h-full object-contain"
+                                        poster="/video-poster.png"
+                                    />
+                                    <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Preview Ready</span>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setShowPublisher(true)}
-                                    className="bg-white text-indigo-900 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all shadow-xl"
-                                >
-                                    Open Publisher Hub
-                                </button>
+
+                                <div className="p-6 bg-indigo-900 rounded-2xl text-white flex items-center justify-between shadow-xl ring-1 ring-white/10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
+                                            <Send size={20} className="text-emerald-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-sm">Asset Synthesis Complete</h4>
+                                            <p className="text-xs text-indigo-300">Your grounded video is ready for distribution.</p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowPublisher(true)}
+                                        className="bg-white text-indigo-900 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 hover:text-white transition-all shadow-xl active:scale-95"
+                                    >
+                                        Open Publisher Hub
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -304,10 +319,20 @@ export default function VideoStudioPage() {
                                 </button>
                             </div>
 
-                            <div className="aspect-video bg-gray-900 rounded-3xl overflow-hidden relative group">
-                                <Video size={48} className="text-gray-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                                <div className="absolute inset-0 bg-emerald-500/10" />
-                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-white/50 tracking-widest uppercase">
+                            <div className="aspect-video bg-black rounded-3xl overflow-hidden relative group shadow-inner ring-1 ring-gray-100">
+                                {renderedVideoUrl ? (
+                                    <video 
+                                        src={renderedVideoUrl} 
+                                        className="w-full h-full object-contain"
+                                        autoPlay
+                                        muted
+                                        loop
+                                    />
+                                ) : (
+                                    <Video size={48} className="text-gray-800 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                )}
+                                <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none" />
+                                <div className="absolute bottom-4 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-white/70 tracking-widest uppercase bg-black/40 backdrop-blur-sm p-2 rounded-lg">
                                     <span>{enterprise.name} Original</span>
                                     <span>{new Date().toLocaleDateString()}</span>
                                 </div>

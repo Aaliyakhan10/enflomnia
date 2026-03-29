@@ -6,7 +6,7 @@ from app.models.campaign import CampaignStrategy
 class PublishingService:
     def __init__(self, db: Session):
         self.db = db
-        self.guard = DataGuardService(db)
+        self.guard = DataGuardService()
 
     def publish_content(self, enterprise_id: str, payload: dict) -> dict:
         """
@@ -14,7 +14,7 @@ class PublishingService:
         Mocks an Instagram Graph API publish action.
         """
         # 1. Log the publish intent via Data Guard (Accountability)
-        self.guard.log_access(enterprise_id, "Publish Action Triggered: Instagram", "Social Postman")
+        self.guard.audit_log(self.db, enterprise_id, "Publish Action Triggered: Instagram", "Social Postman")
         
         # 2. Extract content
         content_type = payload.get("type", "unknown")
